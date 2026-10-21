@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vib-lab</title>
+<meta name="description" content="Experimentos de vibe coding e creative coding de Marcos Felipe.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f2ee;
+    --surface: #ffffff;
+    --ink: #141413;
+    --ink-soft: #5c5a55;
+    --line: rgba(20, 20, 19, .12);
+    --accent: #6476fe;
+    --s-rascunho: #c9821f;
+    --s-funcionando: #2f8f4e;
+    --s-arquivado: #8a8780;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121211;
+      --surface: #1c1c1a;
+      --ink: #eeece7;
+      --ink-soft: #a19e97;
+      --line: rgba(238, 236, 231, .12);
+      --accent: #8c99ff;
+      --s-rascunho: #e2a24a;
+      --s-funcionando: #5cc07c;
+      --s-arquivado: #8f8c85;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 72px 24px 96px; }
+  header {
+    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+    gap: 24px; padding-bottom: 32px; border-bottom: 1px solid var(--line);
+  }
+  h1 {
+    font-family: 'Instrument Serif', Georgia, serif; font-weight: 400;
+    font-size: clamp(56px, 10vw, 112px); line-height: .9; letter-spacing: -.02em;
+  }
+  h1 em { color: var(--accent); }
+  .intro { max-width: 340px; color: var(--ink-soft); font-size: 15px; line-height: 1.55; }
+  .mono {
+    font-family: 'DM Mono', ui-monospace, monospace; font-size: 11px;
+    letter-spacing: .12em; text-transform: uppercase;
+  }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 28px 0 36px; }
+  .filters button {
+    font: inherit; cursor: pointer; color: var(--ink-soft);
+    background: transparent; border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 14px; transition: color .15s, border-color .15s, background .15s;
+  }
+  .filters button:hover { color: var(--ink); border-color: var(--ink-soft); }
+  .filters button[aria-pressed="true"] { color: var(--bg); background: var(--ink); border-color: var(--ink); }
+  .grid {
+    display: grid; gap: 28px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+  .card {
+    display: flex; flex-direction: column; color: inherit; text-decoration: none;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    overflow: hidden; transition: transform .2s ease, border-color .2s ease;
+  }
+  .card:hover { transform: translateY(-3px); border-color: var(--ink-soft); }
+  .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .thumb {
+    aspect-ratio: 16 / 10; background: var(--bg); overflow: hidden;
+    border-bottom: 1px solid var(--line);
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .meta { display: flex; justify-content: space-between; align-items: center; color: var(--ink-soft); }
+  .status { display: inline-flex; align-items: center; gap: 6px; }
+  .status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--dot, currentColor); }
+  .card h2 { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 30px; line-height: 1.05; }
+  .card p { color: var(--ink-soft); font-size: 14px; line-height: 1.5; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 6px; }
+  .tags span { color: var(--ink-soft); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; font-size: 10px; }
+  .empty { color: var(--ink-soft); padding: 40px 0; }
+  footer { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--ink-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  footer a { color: inherit; }
+  @media (max-width: 520px) {
+    .wrap { padding: 48px 16px 72px; }
+    .grid { grid-template-columns: 1fr; gap: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>vib<em>·</em>lab</h1>
+    <p class="intro">Experimentos de vibe coding e creative coding: interfaces, movimento, som e pequenas ferramentas, cada um numa página só.</p>
+  </header>
+
+  <nav class="filters mono" id="filters" aria-label="Filtrar por tag"></nav>
+  <main class="grid" id="grid" aria-live="polite"></main>
+
+  <footer class="mono">
+    <span id="count"></span>
+    <a href="https://github.com/marcosxfelipe/vib-lab">Código no GitHub</a>
+  </footer>
+</div>
+
+<script>
+  const STATUS_COLOR = {
+    rascunho: 'var(--s-rascunho)',
+    funcionando: 'var(--s-funcionando)',
+    arquivado: 'var(--s-arquivado)'
+  };
+  const grid = document.getElementById('grid');
+  const filters = document.getElementById('filters');
+  const count = document.getElementById('count');
+  let projects = [];
+  let active = 'todos';
+
+  function el(tag, attrs = {}, text) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    if (text != null) node.textContent = text;
+    return node;
+  }
+
+  function formatDate(d) {
+    const [y, m] = (d || '').split('-');
+    const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    return m ? `${months[+m - 1]} ${y}` : (y || '');
+  }
+
+  function render() {
+    grid.replaceChildren();
+    const list = active === 'todos' ? projects : projects.filter(p => (p.tags || []).includes(active));
+    if (!list.length) grid.append(el('p', { class: 'empty' }, 'Nenhum projeto ainda.'));
+    for (const p of list) {
+      const href = p.url || `projects/${p.slug}/`;
+      const card = el('a', { class: 'card', href });
+      if (p.url) { card.target = '_blank'; card.rel = 'noopener'; }
+
+      const thumb = el('div', { class: 'thumb' });
+      const img = el('img', { src: `projects/${p.slug}/thumb.png`, alt: '', loading: 'lazy' });
+      img.onerror = () => img.remove();
+      thumb.append(img);
+
+      const body = el('div', { class: 'body' });
+      const meta = el('div', { class: 'meta mono' });
+      meta.append(el('span', {}, formatDate(p.date)));
+      const st = el('span', { class: 'status' }, p.status || '');
+      st.style.setProperty('--dot', STATUS_COLOR[p.status] || 'currentColor');
+      meta.append(st);
+
+      const tags = el('div', { class: 'tags mono' });
+      for (const t of p.tags || []) tags.append(el('span', {}, t));
+
+      body.append(meta, el('h2', {}, p.title), el('p', {}, p.description || ''), tags);
+      card.append(thumb, body);
+      grid.append(card);
+    }
+    count.textContent = `${list.length} ${list.length === 1 ? 'projeto' : 'projetos'}`;
+  }
+
+  function renderFilters() {
+    const tags = ['todos', ...new Set(projects.flatMap(p => p.tags || []))];
+    filters.replaceChildren();
+    for (const t of tags) {
+      const b = el('button', { type: 'button', 'aria-pressed': String(t === active) }, t);
+      b.onclick = () => { active = t; renderFilters(); render(); };
+      filters.append(b);
+    }
+  }
+
+  fetch('projects.json')
+    .then(r => r.json())
+    .then(data => {
+      projects = data.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      renderFilters();
+      render();
+    })
+    .catch(() => {
+      grid.append(el('p', { class: 'empty' }, 'Não foi possível carregar projects.json. Abra pelo GitHub Pages ou por um servidor local.'));
+    });
+</script>
+</body>
+</html>

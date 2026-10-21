@@ -1,0 +1,18 @@
+[
+  {
+    "slug": "2026-creative-katas",
+    "title": "Creative Katas",
+    "date": "2026-04",
+    "description": "Prática criativa diária em 28 dias, inspirada em The Artist's Way, com feed de registros.",
+    "tags": ["app", "mobile", "creativity"],
+    "status": "funcionando"
+  },
+  {
+    "slug": "2026-creative-quest",
+    "title": "Creative Quest",
+    "date": "2026-04",
+    "description": "App experimental para estimular a criatividade: lição do dia, memórias com foto, timer Pomodoro e sessões de desenho.",
+    "tags": ["app", "mobile", "creativity"],
+    "status": "arquivado"
+  }
+]

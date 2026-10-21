@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nome do projeto</title>
+<style>
+  :root {
+    --bg: #f7f5f2;
+    --ink: #111110;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #111110; --ink: #f7f5f2; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--ink); font-family: system-ui, sans-serif; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .back { position: fixed; top: 16px; left: 16px; color: inherit; font: 12px ui-monospace, monospace; text-decoration: none; opacity: .6; }
+  .back:hover { opacity: 1; }
+</style>
+</head>
+<body>
+<a class="back" href="../../">← vib-lab</a>
+<canvas id="c"></canvas>
+<script>
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = innerWidth * dpr;
+    canvas.height = innerHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  addEventListener('resize', resize);
+  resize();
+
+  function frame(t) {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    // desenhe aqui
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+</script>
+</body>
+</html>

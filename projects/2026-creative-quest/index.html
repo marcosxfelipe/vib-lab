@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creative Quest</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black: #0e0e0e;
+  --white: #f8f8f8;
+  --gray-100: #f0f0f0;
+  --gray-200: #e0e0e0;
+  --gray-400: #a0a0a0;
+  --gray-600: #555;
+  --radius: 20px;
+  --radius-sm: 12px;
+}
+
+html { font-size: 16px; }
+
+body {
+  background: var(--white);
+  color: var(--black);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ─────────────────────────────────────────
+   HOME
+───────────────────────────────────────── */
+#home { padding: 48px 28px 100px; justify-content: space-between; }
+.app-name { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 48px; }
+.today-label { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 12px; }
+.today-title { font-family: 'Playfair Display', serif; font-size: clamp(28px, 7vw, 42px); font-weight: 400; line-height: 1.15; margin-bottom: 24px; }
+.day-counter { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--gray-400); letter-spacing: 0.1em; margin-bottom: 40px; }
+.btn-primary { width: 100%; padding: 18px 24px; background: var(--black); color: var(--white); border: none; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 400; cursor: pointer; letter-spacing: 0.02em; transition: opacity 0.15s; -webkit-tap-highlight-color: transparent; }
+.btn-primary:active { opacity: 0.7; }
+.btn-secondary { width: 100%; padding: 16px 24px; background: none; color: var(--black); border: 1.5px solid var(--gray-200); border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 400; cursor: pointer; letter-spacing: 0.02em; transition: border-color 0.15s; margin-top: 12px; -webkit-tap-highlight-color: transparent; }
+.btn-secondary:active { border-color: var(--black); }
+.streak-row { display: flex; gap: 6px; margin-bottom: 32px; }
+.streak-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gray-200); transition: background 0.3s; }
+.streak-dot.done { background: var(--black); }
+
+/* ─────────────────────────────────────────
+   LESSON
+───────────────────────────────────────── */
+#lesson { padding: 0; }
+.lesson-scroll { flex: 1; overflow-y: auto; padding: 48px 28px 120px; }
+.back-btn { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray-400); background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 40px; display: flex; align-items: center; gap: 8px; -webkit-tap-highlight-color: transparent; }
+.lesson-meta { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 12px; display: flex; gap: 16px; flex-wrap: wrap; }
+.lesson-heading { font-family: 'Playfair Display', serif; font-size: clamp(26px, 6vw, 36px); font-weight: 400; line-height: 1.2; margin-bottom: 32px; }
+.lesson-intent { font-size: 15px; line-height: 1.75; color: var(--gray-600); margin-bottom: 32px; font-style: italic; }
+.divider { height: 1px; background: var(--gray-200); margin: 32px 0; }
+.action-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 14px; }
+.action-text { font-size: 16px; line-height: 1.7; color: var(--black); }
+.photo-section { margin-top: 40px; }
+.photo-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 14px; }
+.photo-upload-area { border: 1.5px dashed var(--gray-200); border-radius: var(--radius); padding: 32px; text-align: center; cursor: pointer; transition: border-color 0.2s; position: relative; overflow: hidden; }
+.photo-upload-area:hover { border-color: var(--black); }
+.photo-upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.photo-upload-text { font-size: 14px; color: var(--gray-400); line-height: 1.5; }
+.photo-preview { width: 100%; border-radius: var(--radius); display: none; object-fit: cover; max-height: 300px; }
+.photo-preview.visible { display: block; }
+.photo-change-btn { margin-top: 12px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray-400); background: none; border: none; cursor: pointer; display: none; }
+.photo-change-btn.visible { display: block; }
+.lesson-bottom { position: fixed; bottom: 0; left: 0; right: 0; padding: 16px 28px 88px; background: linear-gradient(transparent, var(--white) 30%); }
+.btn-complete { width: 100%; padding: 18px 24px; background: var(--black); color: var(--white); border: none; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 15px; cursor: pointer; transition: opacity 0.15s; -webkit-tap-highlight-color: transparent; }
+.btn-complete:active { opacity: 0.7; }
+.btn-complete.done { background: none; border: 1.5px solid var(--gray-200); color: var(--gray-400); }
+
+/* ─────────────────────────────────────────
+   ARCHIVE
+───────────────────────────────────────── */
+#archive { padding: 48px 28px 100px; }
+.archive-title { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 400; margin-bottom: 8px; }
+.archive-subtitle { font-size: 14px; color: var(--gray-400); margin-bottom: 40px; }
+.archive-list { display: flex; flex-direction: column; gap: 2px; }
+.archive-item { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--gray-100); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.archive-item:last-child { border-bottom: none; }
+.archive-day { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--gray-400); letter-spacing: 0.1em; min-width: 36px; }
+.archive-info { flex: 1; }
+.archive-name { font-size: 15px; font-weight: 400; line-height: 1.3; margin-bottom: 2px; }
+.archive-status { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--gray-400); letter-spacing: 0.05em; }
+.archive-thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; display: none; }
+.archive-thumb.visible { display: block; }
+
+/* ─────────────────────────────────────────
+   SESSION SCREEN
+───────────────────────────────────────── */
+#session {
+  padding: 48px 28px 100px;
+  overflow-y: auto;
+}
+
+.session-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 400;
+  margin-bottom: 6px;
+}
+
+.session-subtitle {
+  font-size: 14px;
+  color: var(--gray-400);
+  margin-bottom: 40px;
+  line-height: 1.5;
+}
+
+.tool-card {
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tool-card:hover { border-color: var(--black); background: white; }
+
+.tool-card-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  margin-bottom: 8px;
+}
+
+.tool-card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  font-weight: 400;
+  margin-bottom: 6px;
+}
+
+.tool-card-desc {
+  font-size: 13px;
+  color: var(--gray-400);
+  line-height: 1.5;
+}
+
+/* ─────────────────────────────────────────
+   POMODORO SCREEN
+───────────────────────────────────────── */
+#pomodoro {
+  position: relative;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 48px 28px;
+  transition: background 1s ease;
+}
+
+/* Radial pulse background */
+.pomo-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.pulse-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(14,14,14,0.06);
+  animation: pulseRing 4s ease-in-out infinite;
+}
+
+.pulse-ring:nth-child(1) { width: 200px; height: 200px; animation-delay: 0s; }
+.pulse-ring:nth-child(2) { width: 320px; height: 320px; animation-delay: 0.6s; }
+.pulse-ring:nth-child(3) { width: 460px; height: 460px; animation-delay: 1.2s; }
+.pulse-ring:nth-child(4) { width: 620px; height: 620px; animation-delay: 1.8s; }
+.pulse-ring:nth-child(5) { width: 800px; height: 800px; animation-delay: 2.4s; }
+
+@keyframes pulseRing {
+  0%, 100% { transform: scale(0.95); opacity: 0.4; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
+.pulse-ring.active {
+  border-color: rgba(14,14,14,0.12);
+  animation: pulseRingActive 2s ease-in-out infinite;
+}
+
+@keyframes pulseRingActive {
+  0%, 100% { transform: scale(0.92); opacity: 0.3; }
+  50% { transform: scale(1.08); opacity: 0.8; }
+}
+
+/* fill circle that grows as time passes */
+.pomo-fill {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14,14,14,0.07) 0%, transparent 70%);
+  transition: width 1s linear, height 1s linear, opacity 1s linear;
+  pointer-events: none;
+}
+
+.pomo-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  text-align: center;
+}
+
+.pomo-back {
+  position: absolute;
+  top: 48px;
+  left: 28px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 2;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Setup state */
+.pomo-setup { width: 100%; }
+
+.pomo-setup-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  margin-bottom: 20px;
+}
+
+.time-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.preset-btn {
+  padding: 12px 20px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 100px;
+  background: none;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--black);
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.preset-btn:hover, .preset-btn.selected { background: var(--black); color: var(--white); border-color: var(--black); }
+
+.time-custom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.time-custom input {
+  width: 80px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Mono', monospace;
+  font-size: 15px;
+  text-align: center;
+  background: none;
+  color: var(--black);
+  outline: none;
+}
+
+.time-custom input:focus { border-color: var(--black); }
+
+.time-custom-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--gray-400);
+}
+
+/* Running state */
+.pomo-running { display: none; flex-direction: column; align-items: center; }
+.pomo-running.active { display: flex; }
+.pomo-setup-wrap.hidden { display: none; }
+
+.pomo-time-display {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(72px, 22vw, 120px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+  transition: color 0.5s;
+  font-variant-numeric: tabular-nums;
+}
+
+.pomo-time-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  margin-bottom: 56px;
+}
+
+.pomo-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.pomo-btn-main {
+  padding: 16px 36px;
+  background: var(--black);
+  color: var(--white);
+  border: none;
+  border-radius: 100px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+}
+
+.pomo-btn-main:active { opacity: 0.7; }
+
+.pomo-btn-ghost {
+  padding: 16px 24px;
+  background: none;
+  color: var(--gray-400);
+  border: 1.5px solid var(--gray-200);
+  border-radius: 100px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s;
+}
+
+.pomo-btn-ghost:active { border-color: var(--black); color: var(--black); }
+
+/* Floating pill when minimized */
+.pomo-pill {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--black);
+  color: var(--white);
+  border-radius: 100px;
+  padding: 12px 20px;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  z-index: 200;
+  cursor: pointer;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pomo-pill.visible { display: flex; }
+
+.pomo-pill-time {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.pomo-pill-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.6);
+}
+
+.pomo-pill-stop {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.5);
+  border-left: 1px solid rgba(255,255,255,0.2);
+  padding-left: 12px;
+  cursor: pointer;
+}
+
+/* ─────────────────────────────────────────
+   DRAWING SESSION SCREEN
+───────────────────────────────────────── */
+#drawing {
+  padding: 0;
+  min-height: 100vh;
+}
+
+.drawing-setup {
+  padding: 48px 28px 100px;
+  overflow-y: auto;
+}
+
+.drawing-running {
+  display: none;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.drawing-running.active { display: flex; }
+
+/* Category grid */
+.category-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  margin-bottom: 16px;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.cat-btn {
+  padding: 16px 12px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cat-btn:hover { border-color: var(--black); }
+.cat-btn.selected { background: var(--black); border-color: var(--black); }
+
+.cat-icon { font-size: 22px; margin-bottom: 8px; display: block; }
+.cat-name { font-size: 14px; color: var(--black); display: block; line-height: 1.3; }
+.cat-btn.selected .cat-name { color: var(--white); }
+.cat-count { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--gray-400); }
+.cat-btn.selected .cat-count { color: rgba(255,255,255,0.5); }
+
+/* Duration selector */
+.duration-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+
+.dur-btn {
+  padding: 10px 18px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 100px;
+  background: none;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--black);
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dur-btn:hover, .dur-btn.selected { background: var(--black); color: var(--white); border-color: var(--black); }
+
+/* Running view */
+.drawing-image-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #111;
+  min-height: 0;
+}
+
+.drawing-ref-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.4s;
+}
+
+.drawing-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.7) 100%);
+}
+
+.drawing-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px 20px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.drawing-timer {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.02em;
+  min-width: 80px;
+}
+
+.drawing-timer-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  flex: 1;
+}
+
+.drawing-btn {
+  padding: 10px 18px;
+  border-radius: 100px;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.1);
+  color: white;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+
+.drawing-btn:active { background: rgba(255,255,255,0.2); }
+
+.drawing-category-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+  color: white;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 100px;
+}
+
+.drawing-back-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+  color: white;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.loading-img {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+  color: rgba(255,255,255,0.3);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* ─────────────────────────────────────────
+   TAB BAR
+───────────────────────────────────────── */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(248,248,248,0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--gray-100);
+  display: flex;
+  padding: 10px 0 24px;
+  z-index: 100;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab-icon { font-size: 18px; line-height: 1; }
+
+.tab-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  transition: color 0.15s;
+}
+
+.tab.active .tab-label { color: var(--black); }
+</style>
+</head>
+<body>
+
+<!-- ═══ HOME ═══ -->
+<div class="screen active" id="home">
+  <div>
+    <p class="app-name">Creative Quest</p>
+    <p class="today-label">Today</p>
+    <h1 class="today-title" id="home-title">Loading…</h1>
+    <p class="day-counter" id="home-day-counter"></p>
+    <button class="btn-primary" id="home-cta" onclick="openTodayLesson()">Start today's lesson</button>
+    <button class="btn-secondary" id="home-cta-done" style="display:none" onclick="openTodayLesson()">Review today's lesson</button>
+  </div>
+  <div>
+    <div class="streak-row" id="streak-row"></div>
+  </div>
+</div>
+
+<!-- ═══ LESSON ═══ -->
+<div class="screen" id="lesson">
+  <div class="lesson-scroll">
+    <button class="back-btn" onclick="goHome()">← Back</button>
+    <div class="lesson-meta" id="lesson-meta"></div>
+    <h2 class="lesson-heading" id="lesson-heading"></h2>
+    <p class="lesson-intent" id="lesson-intent"></p>
+    <div class="divider"></div>
+    <p class="action-label">Do today</p>
+    <p class="action-text" id="lesson-action"></p>
+    <div class="photo-section">
+      <p class="photo-label">Memory</p>
+      <div class="photo-upload-area" id="photo-area">
+        <input type="file" accept="image/*" id="photo-input" onchange="handlePhoto(event)">
+        <p class="photo-upload-text">Tap to add a photo<br><span style="color:var(--gray-200)">from this lesson</span></p>
+      </div>
+      <img class="photo-preview" id="photo-preview" src="" alt="Memory">
+      <button class="photo-change-btn" id="photo-change" onclick="triggerPhotoInput()">Change photo</button>
+    </div>
+  </div>
+  <div class="lesson-bottom">
+    <button class="btn-complete" id="btn-complete" onclick="toggleComplete()">Mark as done</button>
+  </div>
+</div>
+
+<!-- ═══ ARCHIVE ═══ -->
+<div class="screen" id="archive">
+  <button class="back-btn" style="margin: 48px 28px 0; display:flex;" onclick="goHome()">← Back</button>
+  <div style="padding: 24px 28px 100px;">
+    <h2 class="archive-title">All Lessons</h2>
+    <p class="archive-subtitle" id="archive-subtitle"></p>
+    <div class="archive-list" id="archive-list"></div>
+  </div>
+</div>
+
+<!-- ═══ SESSION HUB ═══ -->
+<div class="screen" id="session">
+  <p class="app-name">Creative Quest</p>
+  <h2 class="session-title">Session</h2>
+  <p class="session-subtitle">Tools to support your creative practice.</p>
+
+  <div class="tool-card" onclick="showPomodoro()">
+    <p class="tool-card-label">Focus</p>
+    <h3 class="tool-card-title">Pomodoro Timer</h3>
+    <p class="tool-card-desc">Set a timer and enter deep focus. The space breathes with you as time passes.</p>
+  </div>
+
+  <div class="tool-card" onclick="showDrawing()">
+    <p class="tool-card-label">Practice</p>
+    <h3 class="tool-card-title">Drawing Session</h3>
+    <p class="tool-card-desc">Pick a category and duration. You'll get a reference image to draw from — change it anytime.</p>
+  </div>
+</div>
+
+<!-- ═══ POMODORO ═══ -->
+<div class="screen" id="pomodoro">
+  <div class="pomo-bg">
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+  </div>
+  <div class="pomo-fill" id="pomo-fill"></div>
+
+  <button class="pomo-back" onclick="exitPomodoro()">← Session</button>
+
+  <div class="pomo-content">
+    <!-- Setup -->
+    <div class="pomo-setup-wrap" id="pomo-setup-wrap">
+      <p class="pomo-setup-label" style="text-align:center; margin-bottom:32px;">How long do you want to focus?</p>
+      <div class="time-presets">
+        <button class="preset-btn selected" onclick="selectPreset(this, 5)">5 min</button>
+        <button class="preset-btn" onclick="selectPreset(this, 15)">15 min</button>
+        <button class="preset-btn" onclick="selectPreset(this, 25)">25 min</button>
+        <button class="preset-btn" onclick="selectPreset(this, 45)">45 min</button>
+        <button class="preset-btn" onclick="selectPreset(this, 60)">60 min</button>
+      </div>
+      <div class="time-custom">
+        <input type="number" id="custom-minutes" placeholder="—" min="1" max="180" oninput="selectCustom(this)">
+        <span class="time-custom-label">min custom</span>
+      </div>
+      <button class="btn-primary" style="max-width:280px" onclick="startPomodoro()">Start focus</button>
+    </div>
+
+    <!-- Running -->
+    <div class="pomo-running" id="pomo-running">
+      <div class="pomo-time-display" id="pomo-display">25:00</div>
+      <p class="pomo-time-label" id="pomo-status-label">Focusing</p>
+      <div class="pomo-controls">
+        <button class="pomo-btn-ghost" onclick="resetPomodoro()">Reset</button>
+        <button class="pomo-btn-main" id="pomo-pause-btn" onclick="togglePause()">Pause</button>
+        <button class="pomo-btn-ghost" onclick="minimizePomodoro()">Minimize</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DRAWING ═══ -->
+<div class="screen" id="drawing">
+  <!-- Setup -->
+  <div class="drawing-setup" id="drawing-setup">
+    <button class="back-btn" onclick="showSession()">← Session</button>
+    <h2 class="session-title" style="margin-bottom:6px;">Drawing Session</h2>
+    <p class="session-subtitle">Pick a category and duration. A reference image will guide you.</p>
+
+    <p class="category-label">Category</p>
+    <div class="category-grid" id="category-grid">
+      <button class="cat-btn selected" onclick="selectCategory(this,'body_female')" data-key="body_female">
+        <span class="cat-icon">🧍‍♀️</span>
+        <span class="cat-name">Female Figure</span>
+        <span class="cat-count">Life drawing</span>
+      </button>
+      <button class="cat-btn" onclick="selectCategory(this,'body_male')" data-key="body_male">
+        <span class="cat-icon">🧍‍♂️</span>
+        <span class="cat-name">Male Figure</span>
+        <span class="cat-count">Life drawing</span>
+      </button>
+      <button class="cat-btn" onclick="selectCategory(this,'portrait')" data-key="portrait">
+        <span class="cat-icon">🧑</span>
+        <span class="cat-name">Portrait</span>
+        <span class="cat-count">Face & expression</span>
+      </button>
+      <button class="cat-btn" onclick="selectCategory(this,'groups')" data-key="groups">
+        <span class="cat-icon">👥</span>
+        <span class="cat-name">Groups</span>
+        <span class="cat-count">People together</span>
+      </button>
+      <button class="cat-btn" onclick="selectCategory(this,'landscape')" data-key="landscape">
+        <span class="cat-icon">🌄</span>
+        <span class="cat-name">Landscape</span>
+        <span class="cat-count">Nature & light</span>
+      </button>
+      <button class="cat-btn" onclick="selectCategory(this,'buildings')" data-key="buildings">
+        <span class="cat-icon">🏛️</span>
+        <span class="cat-name">Architecture</span>
+        <span class="cat-count">Buildings & spaces</span>
+      </button>
+      <button class="cat-btn" onclick="selectCategory(this,'animals')" data-key="animals">
+        <span class="cat-icon">🦊</span>
+        <span class="cat-name">Animals</span>
+        <span class="cat-count">Creatures</span>
+      </button>
+      <button class="cat-btn" onclick="selectCategory(this,'still_life')" data-key="still_life">
+        <span class="cat-icon">🍎</span>
+        <span class="cat-name">Still Life</span>
+        <span class="cat-count">Objects & light</span>
+      </button>
+    </div>
+
+    <p class="category-label">Duration per pose</p>
+    <div class="duration-row">
+      <button class="dur-btn selected" onclick="selectDuration(this, 60)">1 min</button>
+      <button class="dur-btn" onclick="selectDuration(this, 120)">2 min</button>
+      <button class="dur-btn" onclick="selectDuration(this, 300)">5 min</button>
+      <button class="dur-btn" onclick="selectDuration(this, 600)">10 min</button>
+      <button class="dur-btn" onclick="selectDuration(this, 900)">15 min</button>
+    </div>
+
+    <button class="btn-primary" onclick="startDrawing()">Start session</button>
+  </div>
+
+  <!-- Running -->
+  <div class="drawing-running" id="drawing-running">
+    <div class="drawing-image-wrap">
+      <div class="loading-img" id="drawing-loading">Loading image…</div>
+      <img class="drawing-ref-img" id="drawing-img" src="" alt="Reference" onload="imageLoaded()" onerror="imageError()">
+      <div class="drawing-img-overlay"></div>
+      <div class="drawing-category-badge" id="drawing-badge"></div>
+      <button class="drawing-back-btn" onclick="endDrawing()">End</button>
+      <div class="drawing-controls">
+        <div>
+          <div class="drawing-timer" id="drawing-timer">1:00</div>
+          <div class="drawing-timer-label">remaining</div>
+        </div>
+        <div style="flex:1"></div>
+        <button class="drawing-btn" onclick="nextDrawingImage()">Next image</button>
+        <button class="drawing-btn" id="drawing-pause-btn" onclick="toggleDrawingPause()">Pause</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floating Pill -->
+<div class="pomo-pill" id="pomo-pill" onclick="restorePomodoro()">
+  <div>
+    <div class="pomo-pill-time" id="pill-time">25:00</div>
+    <div class="pomo-pill-label">Focusing</div>
+  </div>
+  <div class="pomo-pill-stop" onclick="stopPillTimer(event)">Stop</div>
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar" id="tab-bar">
+  <button class="tab active" id="tab-today" onclick="goHome()">
+    <span class="tab-icon">◎</span>
+    <span class="tab-label">Today</span>
+  </button>
+  <button class="tab" id="tab-archive" onclick="showArchive()">
+    <span class="tab-icon">◫</span>
+    <span class="tab-label">Archive</span>
+  </button>
+  <button class="tab" id="tab-session" onclick="showSession()">
+    <span class="tab-icon">◈</span>
+    <span class="tab-label">Session</span>
+  </button>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+const lessons = [
+  { title: "Morning Pages", week: 1, source: "Artist's Way", duration: "20–30 min", intent: "Write three pages by hand as soon as you wake up — no filter, no judgment. It's not a diary, not art. It's mental housekeeping.", action: "Place a notebook and pen on your bedside table tonight. Tomorrow morning, write. Anything. Don't stop." },
+  { title: "Observe Without Capturing", week: 1, source: "Creative Act", duration: "15 min", intent: "Focused attention is the core muscle of creativity. Today, look at something ordinary with beginner's eyes.", action: "Pick a household object. Look at it for 3 minutes without touching your phone. Notice textures, shadows, imperfections. Write 5 things you never noticed before." },
+  { title: "Name the Inner Critic", week: 1, source: "Artist's Way", duration: "10 min", intent: "Everyone has a voice that says 'this is bad' before you finish. Naming it reduces its power.", action: "Write your inner critic's name (e.g. 'The Director', 'The Teacher'). Give it a ridiculous face. When it shows up, call it by name — then keep working." },
+  { title: "Lost Pleasures List", week: 1, source: "Artist's Way", duration: "15 min", intent: "Blocked creativity often hides pleasures we abandoned. Recovering them recovers energy.", action: "Write 10 things you loved doing as a child that you no longer do. Pick one. Schedule 30 minutes this week to do it — no goal." },
+  { title: "Active Listening", week: 1, source: "Creative Act", duration: "20 min", intent: "Rubin listens to music as if it's new — no matter how many times he's heard it. Training your ear trains perception.", action: "Pick a song you know well. Listen with headphones, eyes closed, doing nothing else. Focus on a single instrument from start to finish." },
+  { title: "Creative Gratitude Log", week: 1, source: "Artist's Way", duration: "5 min", intent: "What we feed grows. Recording small creative wins daily changes what we notice.", action: "Tonight, write 3 moments from today when you felt most alive, curious or present. They don't have to be big. A good coffee counts." },
+  { title: "The Artist Date", week: 1, source: "Artist's Way", duration: "1–2 hrs", intent: "A solo outing with no agenda, to refill the creative reservoir with new images and experiences.", action: "This week: go alone somewhere you've never been or haven't visited in years. A framing shop, a market, a different park. Alone, no phone in hand." },
+  { title: "Show Up Without Inspiration", week: 2, source: "Creative Act", duration: "30 min", intent: "Inspiration prefers to visit those who are already working. Consistent practice is the invitation.", action: "Today, work 30 minutes on a creative project even if you don't feel like it. Don't evaluate the result. The only goal is to show up." },
+  { title: "Comparison Detox", week: 2, source: "Artist's Way", duration: "10 min", intent: "Comparing your work to others is the most efficient poison for creativity.", action: "List 3 people you compare yourself to negatively. For each one, write a creative quality of yours that is unique — that they don't have." },
+  { title: "Make Something Ugly on Purpose", week: 2, source: "Both", duration: "20 min", intent: "Fear of bad work blocks the good. Making something intentionally 'bad' frees the filter.", action: "Draw, write or create something deliberately terrible for 20 minutes. Show no one. The goal is the pleasure of total carelessness." },
+  { title: "Build an Archive", week: 2, source: "Creative Act", duration: "15 min", intent: "Rubin collects fragments of the world — phrases, images, sounds — like an archaeologist. What we save reveals who we are.", action: "Create a folder (physical or digital) called 'Archive'. Today, add 5 things that inspire you without logical reason. A color, a phrase, a photo, a texture." },
+  { title: "Entry Ritual", week: 2, source: "Creative Act", duration: "5 min", intent: "Rituals tell the brain it's time to create. They don't need to be mystical — they need to be consistent.", action: "Define a 5-minute ritual before any creative session: a specific song, a cup of tea, 3 breaths. Use it every time. Make it a door." },
+  { title: "The Open Question", week: 2, source: "Creative Act", duration: "5 min", intent: "Rubin starts many projects with a simple question rather than a solution. Open questions generate more than closed answers.", action: "This morning, write a question about your work or life that has no obvious answer. Don't try to answer it. Let it exist all day." },
+  { title: "Rest as Work", week: 2, source: "Both", duration: "Variable", intent: "Cameron and Rubin agree: emptiness is necessary. The mind needs to not-do in order to create.", action: "Reserve 2 hours this week where you deliberately do nothing productive. No podcasts, no scrolling. Walk, stare out the window, sleep. Resist the guilt." },
+  { title: "The Ugly First Draft", week: 3, source: "Artist's Way", duration: "30 min", intent: "All good work passes through an ugly phase. Cameron calls it the 'terrible first draft'. Embracing it speeds everything up.", action: "Pick a stalled project. Work on it for 30 minutes with one rule: you cannot re-read, correct or evaluate while working. Only forward." },
+  { title: "Imitate to Learn", week: 3, source: "Creative Act", duration: "30 min", intent: "Rubin says copying masters is like learning their grammar. It's not plagiarism — it's study.", action: "Pick a creator you admire. Spend 30 minutes technically replicating a small fragment of their work. Notice where you struggle — that's where you have the most to learn." },
+  { title: "Edit with Distance", week: 3, source: "Creative Act", duration: "20 min", intent: "Editing is where art takes shape. But editing your own work requires emotional separation — which you can train.", action: "Take a past piece of work. Read/view it as if it were someone else's. Underline 3 things that work and 2 that could go. Don't explain — just mark." },
+  { title: "Sources Outside Your Field", week: 3, source: "Creative Act", duration: "1 hr", intent: "The best design ideas come from music. The best music ideas come from architecture. Leaving your bubble is cross-pollination.", action: "Consume something completely outside your field today: a dance documentary, a cooking book, an exhibition from another era. Write 3 connections to your current work." },
+  { title: "The Detail Nobody Sees", week: 3, source: "Creative Act", duration: "20 min", intent: "Rubin believes care for the invisible elevates the whole. The integrity of the work includes what is hidden.", action: "In a current project, improve a detail that probably no one will notice. Perfect alignment, the exact word, correct spacing. Do it for yourself." },
+  { title: "A Letter from the Work", week: 3, source: "Creative Act", duration: "15 min", intent: "Rubin speaks of the work as an entity with its own will. Asking the work what it wants is an exercise in real listening.", action: "Write a short letter from the point of view of your current project — as if it were writing to tell you what it needs from you. What excuses would it give? What would it ask for?" },
+  { title: "Resistance is Information", week: 3, source: "Artist's Way", duration: "10 min", intent: "Cameron: where there is greatest resistance, there is greatest potential. Creative blocks point to what matters most.", action: "Write the creative thing you most avoid doing. Now write why you avoid it. The real reason — not the rational one. That is your next project." },
+  { title: "Define Your Daily Minimum", week: 4, source: "Both", duration: "5 min", intent: "Not inspired days or off days — just a non-negotiable minimum that keeps the muscle active.", action: "Define your daily creative minimum. It can be: 3 morning pages, 15 minutes of sketching, 1 paragraph. Write it down and put it where you see it every day." },
+  { title: "Revisit the Archive", week: 4, source: "Creative Act", duration: "20 min", intent: "Rubin revisits old ideas regularly. What wasn't ripe 6 months ago may be ready today.", action: "Open an old notebook, folder or document. Look for something you abandoned. Read it with fresh eyes. Is it ready now? If not, note what's missing." },
+  { title: "Create Without an Audience", week: 4, source: "Creative Act", duration: "30 min", intent: "Work made just for yourself has a different quality — more honest, more experimental, more free.", action: "Create something this week that no one will see. Don't post, don't show. Just for you. Notice how it feels during the process versus when you create to share." },
+  { title: "Creative Community", week: 4, source: "Artist's Way", duration: "Variable", intent: "Cameron believes creativity is not solitary — it needs a tribe. Surrounding yourself with people who create feeds your own practice.", action: "This week: contact one person whose creativity you admire. Not to ask for anything — to tell them specifically what you appreciate about their work. A real message." },
+  { title: "The Personal Manifesto", week: 4, source: "Both", duration: "30 min", intent: "Clarity of creative values protects against drift. Knowing why you create guides the what and how.", action: "Write 5 sentences beginning with 'I create because…' Be honest — not what you should say, what is true. Keep it. Reread when you lose direction." },
+  { title: "Celebrate the Process", week: 4, source: "Artist's Way", duration: "15 min", intent: "Cameron insists: celebrating small progress is like watering a plant. Without this, the practice wilts.", action: "At the end of this week: list 3 creative things you did, however small. Celebrate with a ritual of your own — a walk, a special meal, loud music. Seriously." },
+  { title: "Begin Again", week: 4, source: "Both", duration: "Ongoing", intent: "Creative practice has no final destination. Every end is a new beginning. The discipline is returning — always.", action: "Decide now: what is the first creative step tomorrow morning? Write it down. Set it as an alarm on your phone. Show up. That's everything." },
+];
+
+// Unsplash API key + search queries per category
+const UNSPLASH_KEY = 'ptVp9JkQ_2JrwT0aI_jGIFKPYcVBJwy9_am_iLBM_nw';
+
+const categoryQueries = {
+  body_female: ['woman figure dance', 'female pose studio', 'woman movement', 'female dancer'],
+  body_male:   ['man figure pose', 'male athlete body', 'man movement studio', 'male pose'],
+  portrait:    ['portrait face light', 'expressive portrait', 'close up face', 'person expression'],
+  groups:      ['people street crowd', 'group friends', 'people gathering', 'crowd urban'],
+  landscape:   ['landscape nature', 'mountains fog', 'countryside', 'dramatic sky'],
+  buildings:   ['architecture building', 'urban architecture', 'historic facade', 'modern building'],
+  animals:     ['wild animal', 'animal portrait', 'bird wildlife', 'fox nature'],
+  still_life:  ['still life objects', 'fruit bowl light', 'objects composition', 'flowers vase'],
+};
+
+// Cache of image URLs per category to avoid re-fetching
+const imageCache = {};
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let state = { startDate: null, completed: {}, photos: {} };
+let currentLessonIdx = null;
+
+function loadState() {
+  const saved = localStorage.getItem('cq_state');
+  if (saved) { state = JSON.parse(saved); }
+  else { state.startDate = todayISO(); saveState(); }
+}
+
+function saveState() { localStorage.setItem('cq_state', JSON.stringify(state)); }
+function todayISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function daysSinceStart() { return Math.floor((new Date(todayISO()) - new Date(state.startDate)) / 86400000); }
+function currentDayIdx() { return Math.min(daysSinceStart(), lessons.length - 1); }
+function isUnlocked(idx) { return idx <= daysSinceStart(); }
+
+// ══════════════════════════════════════════
+// HOME
+// ══════════════════════════════════════════
+function renderHome() {
+  const idx = currentDayIdx();
+  const lesson = lessons[idx];
+  const done = state.completed[idx];
+  document.getElementById('home-title').textContent = lesson.title;
+  document.getElementById('home-day-counter').textContent = `Day ${idx + 1} of ${lessons.length} · Week ${lesson.week}`;
+  document.getElementById('home-cta').style.display = done ? 'none' : 'block';
+  document.getElementById('home-cta-done').style.display = done ? 'block' : 'none';
+  const row = document.getElementById('streak-row');
+  row.innerHTML = '';
+  for (let i = 0; i < 7; i++) {
+    const dotIdx = idx - 6 + i;
+    const dot = document.createElement('div');
+    dot.className = 'streak-dot' + (dotIdx >= 0 && state.completed[dotIdx] ? ' done' : '');
+    row.appendChild(dot);
+  }
+}
+
+// ══════════════════════════════════════════
+// LESSON
+// ══════════════════════════════════════════
+function openLesson(idx) {
+  if (!isUnlocked(idx)) return;
+  currentLessonIdx = idx;
+  const l = lessons[idx];
+  document.getElementById('lesson-meta').innerHTML = `<span>Day ${idx+1}</span><span>Week ${l.week}</span><span>${l.source}</span><span>${l.duration}</span>`;
+  document.getElementById('lesson-heading').textContent = l.title;
+  document.getElementById('lesson-intent').textContent = l.intent;
+  document.getElementById('lesson-action').textContent = l.action;
+  const photo = state.photos[idx];
+  document.getElementById('photo-area').style.display = photo ? 'none' : 'block';
+  document.getElementById('photo-preview').src = photo || '';
+  document.getElementById('photo-preview').classList.toggle('visible', !!photo);
+  document.getElementById('photo-change').classList.toggle('visible', !!photo);
+  const btn = document.getElementById('btn-complete');
+  btn.textContent = state.completed[idx] ? '✓ Done' : 'Mark as done';
+  btn.classList.toggle('done', !!state.completed[idx]);
+  showScreen('lesson'); hideTabBar();
+}
+
+function openTodayLesson() { openLesson(currentDayIdx()); }
+
+function toggleComplete() {
+  state.completed[currentLessonIdx] = !state.completed[currentLessonIdx];
+  saveState();
+  const btn = document.getElementById('btn-complete');
+  btn.textContent = state.completed[currentLessonIdx] ? '✓ Done' : 'Mark as done';
+  btn.classList.toggle('done', !!state.completed[currentLessonIdx]);
+}
+
+function handlePhoto(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    state.photos[currentLessonIdx] = ev.target.result; saveState();
+    document.getElementById('photo-area').style.display = 'none';
+    document.getElementById('photo-preview').src = ev.target.result;
+    document.getElementById('photo-preview').classList.add('visible');
+    document.getElementById('photo-change').classList.add('visible');
+  };
+  reader.readAsDataURL(file);
+}
+
+function triggerPhotoInput() { document.getElementById('photo-input').click(); }
+
+// ══════════════════════════════════════════
+// ARCHIVE
+// ══════════════════════════════════════════
+function showArchive() {
+  const completed = Object.keys(state.completed).filter(k => state.completed[k]).length;
+  document.getElementById('archive-subtitle').textContent = `${completed} of ${lessons.length} lessons completed`;
+  const list = document.getElementById('archive-list');
+  list.innerHTML = '';
+  lessons.forEach((l, i) => {
+    const unlocked = isUnlocked(i), done = state.completed[i], photo = state.photos[i];
+    const item = document.createElement('div');
+    item.className = 'archive-item';
+    if (unlocked) item.onclick = () => openLesson(i);
+    item.innerHTML = `
+      <span class="archive-day">D${String(i+1).padStart(2,'0')}</span>
+      <div class="archive-info">
+        <div class="archive-name" style="color:${unlocked?'var(--black)':'var(--gray-200)'}">${l.title}</div>
+        <div class="archive-status">${done?'completed':unlocked?'unlocked':'locked'}</div>
+      </div>
+      ${photo ? `<img class="archive-thumb visible" src="${photo}" alt="">` : ''}
+    `;
+    list.appendChild(item);
+  });
+  setActiveTab('tab-archive'); showScreen('archive'); showTabBar();
+}
+
+// ══════════════════════════════════════════
+// POMODORO
+// ══════════════════════════════════════════
+let pomoTotal = 5 * 60;
+let pomoRemaining = 5 * 60;
+let pomoInterval = null;
+let pomoPaused = false;
+let pomoMinimized = false;
+
+function selectPreset(btn, mins) {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('custom-minutes').value = '';
+  pomoTotal = mins * 60;
+  pomoRemaining = pomoTotal;
+}
+
+function selectCustom(input) {
+  const v = parseInt(input.value);
+  if (v > 0) {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('selected'));
+    pomoTotal = v * 60;
+    pomoRemaining = pomoTotal;
+  }
+}
+
+function startPomodoro() {
+  document.getElementById('pomo-setup-wrap').classList.add('hidden');
+  document.getElementById('pomo-running').classList.add('active');
+  updatePomoDisplay();
+  updatePomoBg();
+  pomoPaused = false;
+  clearInterval(pomoInterval);
+  pomoInterval = setInterval(tickPomo, 1000);
+}
+
+function tickPomo() {
+  if (pomoPaused) return;
+  pomoRemaining--;
+  updatePomoDisplay();
+  updatePomoBg();
+  if (pomoRemaining <= 0) {
+    clearInterval(pomoInterval);
+    document.getElementById('pomo-display').textContent = 'Done';
+    document.getElementById('pomo-status-label').textContent = 'Session complete';
+    document.getElementById('pill-time').textContent = 'Done';
+    updatePomoBg();
+  }
+}
+
+function formatTime(secs) {
+  const m = Math.floor(secs / 60), s = secs % 60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function updatePomoDisplay() {
+  const t = formatTime(Math.max(0, pomoRemaining));
+  document.getElementById('pomo-display').textContent = t;
+  document.getElementById('pill-time').textContent = t;
+}
+
+function updatePomoBg() {
+  const progress = 1 - (pomoRemaining / pomoTotal);
+  const size = 100 + progress * 900;
+  const opacity = 0.04 + progress * 0.12;
+  const fill = document.getElementById('pomo-fill');
+  fill.style.width = `${size}px`;
+  fill.style.height = `${size}px`;
+  fill.style.opacity = opacity;
+
+  // rings get more active as time passes
+  const rings = document.querySelectorAll('.pulse-ring');
+  rings.forEach(r => r.classList.toggle('active', progress > 0.1));
+}
+
+function togglePause() {
+  pomoPaused = !pomoPaused;
+  document.getElementById('pomo-pause-btn').textContent = pomoPaused ? 'Resume' : 'Pause';
+  document.querySelector('.pomo-pill-label').textContent = pomoPaused ? 'Paused' : 'Focusing';
+}
+
+function resetPomodoro() {
+  clearInterval(pomoInterval);
+  pomoRemaining = pomoTotal;
+  pomoPaused = false;
+  document.getElementById('pomo-setup-wrap').classList.remove('hidden');
+  document.getElementById('pomo-running').classList.remove('active');
+  document.getElementById('pomo-pause-btn').textContent = 'Pause';
+  updatePomoDisplay();
+  updatePomoBg();
+}
+
+function minimizePomodoro() {
+  pomoMinimized = true;
+  document.getElementById('pomo-pill').classList.add('visible');
+  showSession();
+}
+
+function restorePomodoro() {
+  pomoMinimized = false;
+  document.getElementById('pomo-pill').classList.remove('visible');
+  setActiveTab('tab-session');
+  showScreen('pomodoro'); hideTabBar();
+}
+
+function stopPillTimer(e) {
+  e.stopPropagation();
+  clearInterval(pomoInterval);
+  pomoMinimized = false;
+  document.getElementById('pomo-pill').classList.remove('visible');
+  resetPomodoro();
+}
+
+function exitPomodoro() {
+  if (pomoInterval) minimizePomodoro();
+  else showSession();
+}
+
+// ══════════════════════════════════════════
+// DRAWING SESSION
+// ══════════════════════════════════════════
+let drawingCategory = 'body_female';
+let drawingDuration = 60;
+let drawingRemaining = 60;
+let drawingInterval = null;
+let drawingPaused = false;
+
+
+function selectCategory(btn, key) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  drawingCategory = key;
+}
+
+function selectDuration(btn, secs) {
+  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  drawingDuration = secs;
+}
+
+function startDrawing() {
+  drawingRemaining = drawingDuration;
+  drawingPaused = false;
+  document.getElementById('drawing-setup').style.display = 'none';
+  document.getElementById('drawing-running').classList.add('active');
+  const cats = { body_female:'Female Figure', body_male:'Male Figure', portrait:'Portrait', groups:'Groups', landscape:'Landscape', buildings:'Architecture', animals:'Animals', still_life:'Still Life' };
+  document.getElementById('drawing-badge').textContent = cats[drawingCategory];
+  loadDrawingImage();
+  updateDrawingTimer();
+  clearInterval(drawingInterval);
+  drawingInterval = setInterval(tickDrawing, 1000);
+  showScreen('drawing'); hideTabBar();
+}
+
+function tickDrawing() {
+  if (drawingPaused) return;
+  drawingRemaining--;
+  updateDrawingTimer();
+  if (drawingRemaining <= 0) {
+    drawingRemaining = drawingDuration;
+    nextDrawingImage();
+  }
+}
+
+function updateDrawingTimer() {
+  const m = Math.floor(drawingRemaining / 60), s = drawingRemaining % 60;
+  document.getElementById('drawing-timer').textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}` : `0:${String(s).padStart(2,'0')}`;
+}
+
+async function loadDrawingImage() {
+  const img = document.getElementById('drawing-img');
+  const loading = document.getElementById('drawing-loading');
+  img.style.opacity = '0';
+  loading.style.display = 'flex';
+  loading.textContent = 'Loading image…';
+
+  try {
+    // Use cache if available, otherwise fetch a fresh batch
+    if (!imageCache[drawingCategory] || imageCache[drawingCategory].length === 0) {
+      const queries = categoryQueries[drawingCategory];
+      const query = queries[Math.floor(Math.random() * queries.length)];
+      const res = await fetch(
+        `https://api.unsplash.com/photos/random?query=${encodeURIComponent(query)}&count=10&orientation=portrait`,
+        { headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` } }
+      );
+      if (!res.ok) throw new Error('API error');
+      const data = await res.json();
+      imageCache[drawingCategory] = data.map(p => p.urls.regular);
+    }
+
+    // Pop next image from cache
+    const url = imageCache[drawingCategory].pop();
+    img.src = url;
+
+  } catch (e) {
+    loading.textContent = 'Could not load image — check connection';
+  }
+}
+
+function imageLoaded() {
+  document.getElementById('drawing-img').style.opacity = '1';
+  document.getElementById('drawing-loading').style.display = 'none';
+}
+
+function imageError() {
+  document.getElementById('drawing-loading').textContent = 'Could not load image — check connection';
+}
+
+function nextDrawingImage() {
+  drawingRemaining = drawingDuration;
+  loadDrawingImage();
+  updateDrawingTimer();
+}
+
+function toggleDrawingPause() {
+  drawingPaused = !drawingPaused;
+  document.getElementById('drawing-pause-btn').textContent = drawingPaused ? 'Resume' : 'Pause';
+}
+
+function endDrawing() {
+  clearInterval(drawingInterval);
+  drawingPaused = false;
+  document.getElementById('drawing-setup').style.display = 'block';
+  document.getElementById('drawing-running').classList.remove('active');
+  showSession();
+}
+
+// ══════════════════════════════════════════
+// NAV
+// ══════════════════════════════════════════
+function goHome() { renderHome(); setActiveTab('tab-today'); showScreen('home'); showTabBar(); }
+
+function showSession() { setActiveTab('tab-session'); showScreen('session'); showTabBar(); }
+
+function showPomodoro() {
+  setActiveTab('tab-session');
+  showScreen('pomodoro'); hideTabBar();
+}
+
+function showDrawing() {
+  document.getElementById('drawing-setup').style.display = 'block';
+  document.getElementById('drawing-running').classList.remove('active');
+  setActiveTab('tab-session');
+  showScreen('drawing'); hideTabBar();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showTabBar() { document.getElementById('tab-bar').style.display = 'flex'; }
+function hideTabBar() { document.getElementById('tab-bar').style.display = 'none'; }
+
+function setActiveTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+loadState();
+renderHome();
+</script>
+</body>
+</html>

@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creative Quest</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #0e0e0e;
+    --white: #f8f8f8;
+    --gray-100: #f0f0f0;
+    --gray-200: #e0e0e0;
+    --gray-400: #a0a0a0;
+    --gray-600: #555;
+    --radius: 20px;
+    --radius-sm: 12px;
+  }
+
+  html { font-size: 16px; }
+
+  body {
+    background: var(--white);
+    color: var(--black);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ── HOME SCREEN ── */
+  #home {
+    padding: 48px 28px 40px;
+    justify-content: space-between;
+  }
+
+  .home-top { }
+
+  .app-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 48px;
+  }
+
+  .today-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 12px;
+  }
+
+  .today-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 7vw, 42px);
+    font-weight: 400;
+    line-height: 1.15;
+    margin-bottom: 24px;
+  }
+
+  .today-title em {
+    font-style: italic;
+  }
+
+  .day-counter {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--gray-400);
+    letter-spacing: 0.1em;
+    margin-bottom: 40px;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 18px 24px;
+    background: var(--black);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: opacity 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-primary:active { opacity: 0.7; }
+
+  .btn-secondary {
+    width: 100%;
+    padding: 16px 24px;
+    background: none;
+    color: var(--black);
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: border-color 0.15s;
+    margin-top: 12px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-secondary:active { border-color: var(--black); }
+
+  .home-bottom { }
+
+  /* streak bar */
+  .streak-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 32px;
+  }
+
+  .streak-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gray-200);
+    transition: background 0.3s;
+  }
+
+  .streak-dot.done { background: var(--black); }
+
+  /* ── LESSON SCREEN ── */
+  #lesson {
+    padding: 0;
+  }
+
+  .lesson-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 48px 28px 120px;
+  }
+
+  .back-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .lesson-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 12px;
+    display: flex;
+    gap: 16px;
+  }
+
+  .lesson-heading {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(26px, 6vw, 36px);
+    font-weight: 400;
+    line-height: 1.2;
+    margin-bottom: 32px;
+  }
+
+  .lesson-intent {
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--gray-600);
+    margin-bottom: 32px;
+    font-style: italic;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--gray-200);
+    margin: 32px 0;
+  }
+
+  .action-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 14px;
+  }
+
+  .action-text {
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--black);
+  }
+
+  /* photo section */
+  .photo-section {
+    margin-top: 40px;
+  }
+
+  .photo-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 14px;
+  }
+
+  .photo-upload-area {
+    border: 1.5px dashed var(--gray-200);
+    border-radius: var(--radius);
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .photo-upload-area:hover { border-color: var(--black); }
+
+  .photo-upload-area input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .photo-upload-text {
+    font-size: 14px;
+    color: var(--gray-400);
+    line-height: 1.5;
+  }
+
+  .photo-preview {
+    width: 100%;
+    border-radius: var(--radius);
+    display: none;
+    object-fit: cover;
+    max-height: 300px;
+  }
+
+  .photo-preview.visible { display: block; }
+
+  .photo-change-btn {
+    margin-top: 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: none;
+  }
+
+  .photo-change-btn.visible { display: block; }
+
+  /* bottom bar */
+  .lesson-bottom {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px 28px 32px;
+    background: linear-gradient(transparent, var(--white) 30%);
+  }
+
+  .btn-complete {
+    width: 100%;
+    padding: 18px 24px;
+    background: var(--black);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-complete:active { opacity: 0.7; }
+  .btn-complete.done {
+    background: none;
+    border: 1.5px solid var(--gray-200);
+    color: var(--gray-400);
+  }
+
+  /* ── ARCHIVE SCREEN ── */
+  #archive {
+    padding: 48px 28px 40px;
+  }
+
+  .archive-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 400;
+    margin-bottom: 8px;
+  }
+
+  .archive-subtitle {
+    font-size: 14px;
+    color: var(--gray-400);
+    margin-bottom: 40px;
+  }
+
+  .archive-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .archive-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--gray-100);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .archive-item:last-child { border-bottom: none; }
+
+  .archive-day {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--gray-400);
+    letter-spacing: 0.1em;
+    min-width: 36px;
+  }
+
+  .archive-info { flex: 1; }
+
+  .archive-name {
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.3;
+    margin-bottom: 2px;
+  }
+
+  .archive-status {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--gray-400);
+    letter-spacing: 0.05em;
+  }
+
+  .archive-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    display: none;
+  }
+
+  .archive-thumb.visible { display: block; }
+
+  .archive-locked {
+    color: var(--gray-200);
+    font-size: 16px;
+  }
+
+  /* ── DONE SCREEN ── */
+  #done-screen {
+    padding: 48px 28px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .done-icon {
+    font-size: 48px;
+    margin-bottom: 24px;
+  }
+
+  .done-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 400;
+    margin-bottom: 12px;
+  }
+
+  .done-sub {
+    font-size: 15px;
+    color: var(--gray-400);
+    line-height: 1.6;
+    margin-bottom: 48px;
+    max-width: 280px;
+  }
+
+  /* ── NAV ── */
+  .tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border-top: 1px solid var(--gray-100);
+    display: flex;
+    padding: 12px 0 28px;
+    z-index: 100;
+  }
+
+  .tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tab-icon { font-size: 20px; line-height: 1; }
+
+  .tab-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    transition: color 0.15s;
+  }
+
+  .tab.active .tab-label { color: var(--black); }
+
+  /* ── UTIL ── */
+  .mt-12 { margin-top: 12px; }
+  .mt-24 { margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="screen active" id="home">
+  <div class="home-top">
+    <p class="app-name">Creative Quest</p>
+    <p class="today-label">Today</p>
+    <h1 class="today-title" id="home-title">Loading…</h1>
+    <p class="day-counter" id="home-day-counter"></p>
+    <button class="btn-primary" id="home-cta" onclick="openTodayLesson()">Start today's lesson</button>
+    <button class="btn-secondary" id="home-cta-done" style="display:none" onclick="openTodayLesson()">Review today's lesson</button>
+  </div>
+  <div class="home-bottom">
+    <div class="streak-row" id="streak-row"></div>
+  </div>
+</div>
+
+<!-- LESSON -->
+<div class="screen" id="lesson">
+  <div class="lesson-scroll">
+    <button class="back-btn" onclick="goHome()">← Back</button>
+    <div class="lesson-meta" id="lesson-meta"></div>
+    <h2 class="lesson-heading" id="lesson-heading"></h2>
+    <p class="lesson-intent" id="lesson-intent"></p>
+    <div class="divider"></div>
+    <p class="action-label">Do today</p>
+    <p class="action-text" id="lesson-action"></p>
+
+    <div class="photo-section">
+      <p class="photo-label">Memory</p>
+      <div class="photo-upload-area" id="photo-area">
+        <input type="file" accept="image/*" id="photo-input" onchange="handlePhoto(event)">
+        <p class="photo-upload-text">Tap to add a photo<br><span style="color:var(--gray-200)">from this lesson</span></p>
+      </div>
+      <img class="photo-preview" id="photo-preview" src="" alt="Memory">
+      <button class="photo-change-btn" id="photo-change" onclick="triggerPhotoInput()">Change photo</button>
+    </div>
+  </div>
+
+  <div class="lesson-bottom">
+    <button class="btn-complete" id="btn-complete" onclick="toggleComplete()">Mark as done</button>
+  </div>
+</div>
+
+<!-- ARCHIVE -->
+<div class="screen" id="archive">
+  <button class="back-btn" style="margin: 48px 28px 0; display:flex;" onclick="goHome()">← Back</button>
+  <div style="padding: 24px 28px 120px;">
+    <h2 class="archive-title">All Lessons</h2>
+    <p class="archive-subtitle" id="archive-subtitle"></p>
+    <div class="archive-list" id="archive-list"></div>
+  </div>
+</div>
+
+<!-- DONE SCREEN (all 28 complete) -->
+<div class="screen" id="done-screen">
+  <div class="done-icon">✦</div>
+  <h2 class="done-title">Quest Complete</h2>
+  <p class="done-sub">You've completed all 28 days. The practice continues — it just looks different now.</p>
+  <button class="btn-primary" style="max-width:280px" onclick="showArchive()">See your memories</button>
+</div>
+
+<!-- TAB BAR (shown on home + archive) -->
+<div class="tab-bar" id="tab-bar">
+  <button class="tab active" id="tab-today" onclick="goHome()">
+    <span class="tab-icon">◎</span>
+    <span class="tab-label">Today</span>
+  </button>
+  <button class="tab" id="tab-archive" onclick="showArchive()">
+    <span class="tab-icon">◫</span>
+    <span class="tab-label">Archive</span>
+  </button>
+</div>
+
+<script>
+// ── DATA ──
+const lessons = [
+  // WEEK 1
+  { title: "Morning Pages", week: 1, source: "Artist's Way", duration: "20–30 min", intent: "Write three pages by hand as soon as you wake up — no filter, no judgment. It's not a diary, not art. It's mental housekeeping.", action: "Place a notebook and pen on your bedside table tonight. Tomorrow morning, write. Anything. Don't stop." },
+  { title: "Observe Without Capturing", week: 1, source: "Creative Act", duration: "15 min", intent: "Focused attention is the core muscle of creativity. Today, look at something ordinary with beginner's eyes.", action: "Pick a household object. Look at it for 3 minutes without touching your phone. Notice textures, shadows, imperfections. Write 5 things you never noticed before." },
+  { title: "Name the Inner Critic", week: 1, source: "Artist's Way", duration: "10 min", intent: "Everyone has a voice that says 'this is bad' before you finish. Naming it reduces its power.", action: "Write your inner critic's name (e.g. 'The Director', 'The Teacher'). Give it a ridiculous face. When it shows up, call it by name — then keep working." },
+  { title: "Lost Pleasures List", week: 1, source: "Artist's Way", duration: "15 min", intent: "Blocked creativity often hides pleasures we abandoned. Recovering them recovers energy.", action: "Write 10 things you loved doing as a child that you no longer do. Pick one. Schedule 30 minutes this week to do it — no goal." },
+  { title: "Active Listening", week: 1, source: "Creative Act", duration: "20 min", intent: "Rubin listens to music as if it's new — no matter how many times he's heard it. Training your ear trains perception.", action: "Pick a song you know well. Listen with headphones, eyes closed, doing nothing else. Focus on a single instrument from start to finish." },
+  { title: "Creative Gratitude Log", week: 1, source: "Artist's Way", duration: "5 min", intent: "What we feed grows. Recording small creative wins daily changes what we notice.", action: "Tonight, write 3 moments from today when you felt most alive, curious or present. They don't have to be big. A good coffee counts." },
+  { title: "The Artist Date", week: 1, source: "Artist's Way", duration: "1–2 hrs", intent: "A solo outing with no agenda, to refill the creative reservoir with new images and experiences.", action: "This week: go alone somewhere you've never been or haven't visited in years. A framing shop, a market, a different park. Alone, no phone in hand." },
+  // WEEK 2
+  { title: "Show Up Without Inspiration", week: 2, source: "Creative Act", duration: "30 min", intent: "Inspiration prefers to visit those who are already working. Consistent practice is the invitation.", action: "Today, work 30 minutes on a creative project even if you don't feel like it. Don't evaluate the result. The only goal is to show up." },
+  { title: "Comparison Detox", week: 2, source: "Artist's Way", duration: "10 min", intent: "Comparing your work to others is the most efficient poison for creativity.", action: "List 3 people you compare yourself to negatively. For each one, write a creative quality of yours that is unique — that they don't have." },
+  { title: "Make Something Ugly on Purpose", week: 2, source: "Both", duration: "20 min", intent: "Fear of bad work blocks the good. Making something intentionally 'bad' frees the filter.", action: "Draw, write or create something deliberately terrible for 20 minutes. Show no one. The goal is the pleasure of total carelessness." },
+  { title: "Build an Archive", week: 2, source: "Creative Act", duration: "15 min", intent: "Rubin collects fragments of the world — phrases, images, sounds — like an archaeologist. What we save reveals who we are.", action: "Create a folder (physical or digital) called 'Archive'. Today, add 5 things that inspire you without logical reason. A color, a phrase, a photo, a texture." },
+  { title: "Entry Ritual", week: 2, source: "Creative Act", duration: "5 min", intent: "Rituals tell the brain it's time to create. They don't need to be mystical — they need to be consistent.", action: "Define a 5-minute ritual before any creative session: a specific song, a cup of tea, 3 breaths. Use it every time. Make it a door." },
+  { title: "The Open Question", week: 2, source: "Creative Act", duration: "5 min", intent: "Rubin starts many projects with a simple question rather than a solution. Open questions generate more than closed answers.", action: "This morning, write a question about your work or life that has no obvious answer. Don't try to answer it. Let it exist all day." },
+  { title: "Rest as Work", week: 2, source: "Both", duration: "Variable", intent: "Cameron and Rubin agree: emptiness is necessary. The mind needs to not-do in order to create.", action: "Reserve 2 hours this week where you deliberately do nothing productive. No podcasts, no scrolling. Walk, stare out the window, sleep. Resist the guilt." },
+  // WEEK 3
+  { title: "The Ugly First Draft", week: 3, source: "Artist's Way", duration: "30 min", intent: "All good work passes through an ugly phase. Cameron calls it the 'terrible first draft'. Embracing it speeds everything up.", action: "Pick a stalled project. Work on it for 30 minutes with one rule: you cannot re-read, correct or evaluate while working. Only forward." },
+  { title: "Imitate to Learn", week: 3, source: "Creative Act", duration: "30 min", intent: "Rubin says copying masters is like learning their grammar. It's not plagiarism — it's study.", action: "Pick a creator you admire. Spend 30 minutes technically replicating a small fragment of their work. Notice where you struggle — that's where you have the most to learn." },
+  { title: "Edit with Distance", week: 3, source: "Creative Act", duration: "20 min", intent: "Editing is where art takes shape. But editing your own work requires emotional separation — which you can train.", action: "Take a past piece of work. Read/view it as if it were someone else's. Underline 3 things that work and 2 that could go. Don't explain — just mark." },
+  { title: "Sources Outside Your Field", week: 3, source: "Creative Act", duration: "1 hr", intent: "The best design ideas come from music. The best music ideas come from architecture. Leaving your bubble is cross-pollination.", action: "Consume something completely outside your field today: a dance documentary, a cooking book, an exhibition from another era. Write 3 connections to your current work." },
+  { title: "The Detail Nobody Sees", week: 3, source: "Creative Act", duration: "20 min", intent: "Rubin believes care for the invisible elevates the whole. The integrity of the work includes what is hidden.", action: "In a current project, improve a detail that probably no one will notice. Perfect alignment, the exact word, correct spacing. Do it for yourself." },
+  { title: "A Letter from the Work", week: 3, source: "Creative Act", duration: "15 min", intent: "Rubin speaks of the work as an entity with its own will. Asking the work what it wants is an exercise in real listening.", action: "Write a short letter from the point of view of your current project — as if it were writing to tell you what it needs from you. What excuses would it give? What would it ask for?" },
+  { title: "Resistance is Information", week: 3, source: "Artist's Way", duration: "10 min", intent: "Cameron: where there is greatest resistance, there is greatest potential. Creative blocks point to what matters most.", action: "Write the creative thing you most avoid doing. Now write why you avoid it. The real reason — not the rational one. That is your next project." },
+  // WEEK 4
+  { title: "Define Your Daily Minimum", week: 4, source: "Both", duration: "5 min", intent: "Not inspired days or off days — just a non-negotiable minimum that keeps the muscle active.", action: "Define your daily creative minimum. It can be: 3 morning pages, 15 minutes of sketching, 1 paragraph. Write it down and put it where you see it every day." },
+  { title: "Revisit the Archive", week: 4, source: "Creative Act", duration: "20 min", intent: "Rubin revisits old ideas regularly. What wasn't ripe 6 months ago may be ready today.", action: "Open an old notebook, folder or document. Look for something you abandoned. Read it with fresh eyes. Is it ready now? If not, note what's missing." },
+  { title: "Create Without an Audience", week: 4, source: "Creative Act", duration: "30 min", intent: "Work made just for yourself has a different quality — more honest, more experimental, more free.", action: "Create something this week that no one will see. Don't post, don't show. Just for you. Notice how it feels during the process versus when you create to share." },
+  { title: "Creative Community", week: 4, source: "Artist's Way", duration: "Variable", intent: "Cameron believes creativity is not solitary — it needs a tribe. Surrounding yourself with people who create feeds your own practice.", action: "This week: contact one person whose creativity you admire. Not to ask for anything — to tell them specifically what you appreciate about their work. A real message." },
+  { title: "The Personal Manifesto", week: 4, source: "Both", duration: "30 min", intent: "Clarity of creative values protects against drift. Knowing why you create guides the what and how.", action: "Write 5 sentences beginning with 'I create because…' Be honest — not what you should say, what is true. Keep it. Reread when you lose direction." },
+  { title: "Celebrate the Process", week: 4, source: "Artist's Way", duration: "15 min", intent: "Cameron insists: celebrating small progress is like watering a plant. Without this, the practice wilts.", action: "At the end of this week: list 3 creative things you did, however small. Celebrate with a ritual of your own — a walk, a special meal, loud music. Seriously." },
+  { title: "Begin Again", week: 4, source: "Both", duration: "Ongoing", intent: "Creative practice has no final destination. Every end is a new beginning. The discipline is returning — always.", action: "Decide now: what is the first creative step tomorrow morning? Write it down. Set it as an alarm on your phone. Show up. That's everything." },
+];
+
+// ── STATE ──
+let state = {
+  startDate: null,     // ISO string of day 1
+  completed: {},       // { dayIndex: true }
+  photos: {}           // { dayIndex: base64 }
+};
+
+let currentLessonIdx = null;
+
+function loadState() {
+  const saved = localStorage.getItem('cq_state');
+  if (saved) {
+    state = JSON.parse(saved);
+  } else {
+    // First open — set today as day 1
+    state.startDate = todayISO();
+    saveState();
+  }
+}
+
+function saveState() {
+  localStorage.setItem('cq_state', JSON.stringify(state));
+}
+
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function daysSinceStart() {
+  const start = new Date(state.startDate);
+  const today = new Date(todayISO());
+  const diff = Math.floor((today - start) / 86400000);
+  return diff; // 0-based: day 0 = first day
+}
+
+function currentDayIdx() {
+  return Math.min(daysSinceStart(), lessons.length - 1);
+}
+
+function isUnlocked(idx) {
+  return idx <= daysSinceStart();
+}
+
+// ── RENDER HOME ──
+function renderHome() {
+  const idx = currentDayIdx();
+  const lesson = lessons[idx];
+  const done = state.completed[idx];
+
+  document.getElementById('home-title').innerHTML = lesson.title;
+  document.getElementById('home-day-counter').textContent = `Day ${idx + 1} of ${lessons.length} · Week ${lesson.week}`;
+
+  const ctaPrimary = document.getElementById('home-cta');
+  const ctaDone = document.getElementById('home-cta-done');
+  if (done) {
+    ctaPrimary.style.display = 'none';
+    ctaDone.style.display = 'block';
+  } else {
+    ctaPrimary.style.display = 'block';
+    ctaDone.style.display = 'none';
+  }
+
+  // streak dots — last 7 days
+  const row = document.getElementById('streak-row');
+  row.innerHTML = '';
+  for (let i = 0; i < 7; i++) {
+    const dotIdx = idx - 6 + i;
+    const dot = document.createElement('div');
+    dot.className = 'streak-dot' + (dotIdx >= 0 && state.completed[dotIdx] ? ' done' : '');
+    row.appendChild(dot);
+  }
+}
+
+// ── LESSON ──
+function openLesson(idx) {
+  if (!isUnlocked(idx)) return;
+  currentLessonIdx = idx;
+  const l = lessons[idx];
+
+  document.getElementById('lesson-meta').innerHTML = `<span>Day ${idx+1}</span><span>Week ${l.week}</span><span>${l.source}</span><span>${l.duration}</span>`;
+  document.getElementById('lesson-heading').textContent = l.title;
+  document.getElementById('lesson-intent').textContent = l.intent;
+  document.getElementById('lesson-action').textContent = l.action;
+
+  // photo
+  const photo = state.photos[idx];
+  const area = document.getElementById('photo-area');
+  const preview = document.getElementById('photo-preview');
+  const changeBtn = document.getElementById('photo-change');
+
+  if (photo) {
+    area.style.display = 'none';
+    preview.src = photo;
+    preview.classList.add('visible');
+    changeBtn.classList.add('visible');
+  } else {
+    area.style.display = 'block';
+    preview.classList.remove('visible');
+    changeBtn.classList.remove('visible');
+  }
+
+  // complete button
+  const btn = document.getElementById('btn-complete');
+  if (state.completed[idx]) {
+    btn.textContent = '✓ Done';
+    btn.classList.add('done');
+  } else {
+    btn.textContent = 'Mark as done';
+    btn.classList.remove('done');
+  }
+
+  showScreen('lesson');
+  hideTabBar();
+}
+
+function openTodayLesson() {
+  openLesson(currentDayIdx());
+}
+
+function toggleComplete() {
+  const idx = currentLessonIdx;
+  state.completed[idx] = !state.completed[idx];
+  saveState();
+
+  const btn = document.getElementById('btn-complete');
+  if (state.completed[idx]) {
+    btn.textContent = '✓ Done';
+    btn.classList.add('done');
+  } else {
+    btn.textContent = 'Mark as done';
+    btn.classList.remove('done');
+  }
+}
+
+// ── PHOTO ──
+function handlePhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const b64 = ev.target.result;
+    state.photos[currentLessonIdx] = b64;
+    saveState();
+
+    const area = document.getElementById('photo-area');
+    const preview = document.getElementById('photo-preview');
+    const changeBtn = document.getElementById('photo-change');
+    area.style.display = 'none';
+    preview.src = b64;
+    preview.classList.add('visible');
+    changeBtn.classList.add('visible');
+  };
+  reader.readAsDataURL(file);
+}
+
+function triggerPhotoInput() {
+  document.getElementById('photo-input').click();
+}
+
+// ── ARCHIVE ──
+function showArchive() {
+  const completed = Object.keys(state.completed).filter(k => state.completed[k]).length;
+  document.getElementById('archive-subtitle').textContent = `${completed} of ${lessons.length} lessons completed`;
+
+  const list = document.getElementById('archive-list');
+  list.innerHTML = '';
+
+  lessons.forEach((l, i) => {
+    const unlocked = isUnlocked(i);
+    const done = state.completed[i];
+    const photo = state.photos[i];
+
+    const item = document.createElement('div');
+    item.className = 'archive-item';
+    if (unlocked) item.onclick = () => openLesson(i);
+
+    item.innerHTML = `
+      <span class="archive-day">D${String(i+1).padStart(2,'0')}</span>
+      <div class="archive-info">
+        <div class="archive-name" style="color:${unlocked ? 'var(--black)' : 'var(--gray-200)'}">${l.title}</div>
+        <div class="archive-status">${done ? 'completed' : unlocked ? 'unlocked' : 'locked'}</div>
+      </div>
+      ${photo ? `<img class="archive-thumb visible" src="${photo}" alt="">` : ''}
+      ${!unlocked ? `<span class="archive-locked">·</span>` : ''}
+    `;
+    list.appendChild(item);
+  });
+
+  setActiveTab('tab-archive');
+  showScreen('archive');
+  showTabBar();
+}
+
+// ── NAVIGATION ──
+function goHome() {
+  renderHome();
+  setActiveTab('tab-today');
+  showScreen('home');
+  showTabBar();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showTabBar() { document.getElementById('tab-bar').style.display = 'flex'; }
+function hideTabBar() { document.getElementById('tab-bar').style.display = 'none'; }
+
+function setActiveTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── INIT ──
+loadState();
+renderHome();
+</script>
+</body>
+</html>
