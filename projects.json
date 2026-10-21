@@ -1,5 +1,13 @@
 [
   {
+    "slug": "2026-radio-duna",
+    "title": "Rádio Duna",
+    "date": "2026-07",
+    "description": "Camada de grãos de areia que reage ao áudio: o vento segue o volume, cada batida troca a cor e o cursor prende os grãos.",
+    "tags": ["canvas", "audio", "motion"],
+    "status": "funcionando"
+  },
+  {
     "slug": "2026-creative-katas",
     "title": "Creative Katas",
     "date": "2026-04",

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rádio Duna — audio-reactive dune layer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=Space+Grotesk:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#08090F;
+  --bone:#E8E8EC;
+  --violet:#6476FE;
+  --acid:#00FF00;
+  --sulphur:#E4FA00;
+  --line:rgba(232,232,236,.13);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--night);color:var(--bone);
+  font-family:'Space Grotesk',system-ui,sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}
+
+#dunes{
+  position:fixed;inset:0;width:100%;height:100%;
+  z-index:50;
+  pointer-events:none;
+  mix-blend-mode:screen;
+  opacity:0;transition:opacity .6s ease;
+}
+#dunes.on{opacity:1}
+
+.wrap{max-width:900px;margin:0 auto;padding:56px 28px 200px}
+header{display:flex;justify-content:space-between;align-items:baseline;
+  border-bottom:1px solid var(--line);padding-bottom:18px}
+.mark{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;letter-spacing:-.02em}
+.mark span{color:var(--sulphur)}
+.meta{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:rgba(232,232,236,.45)}
+
+h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(42px,9vw,88px);
+  line-height:.94;letter-spacing:-.035em;margin:64px 0 20px;max-width:12ch}
+h1 em{font-style:normal;color:var(--violet)}
+.lede{font-size:19px;line-height:1.6;max-width:52ch;color:rgba(232,232,236,.68)}
+
+.rows{margin-top:72px;border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:64px 1fr auto;gap:20px;align-items:center;
+  padding:20px 8px;border-bottom:1px solid var(--line);
+  transition:background .25s,padding-left .25s;cursor:pointer}
+.row:hover{background:rgba(100,118,254,.12);padding-left:18px}
+.row:focus-visible{outline:2px solid var(--sulphur);outline-offset:-2px}
+.time{font-family:'DM Mono',monospace;font-size:12px;color:var(--sulphur)}
+.title{font-size:17px}
+.artist{font-size:13px;color:rgba(232,232,236,.45);margin-top:3px}
+.tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:rgba(232,232,236,.42);
+  border:1px solid var(--line);border-radius:999px;padding:5px 11px}
+
+.player{position:fixed;left:0;right:0;bottom:0;z-index:60;
+  background:rgba(8,9,15,.86);backdrop-filter:blur(18px);
+  border-top:1px solid var(--line);padding:13px 20px;
+  display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+button{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--bone);background:transparent;
+  border:1px solid var(--line);border-radius:999px;padding:9px 15px;cursor:pointer;
+  transition:border-color .2s,color .2s,background .2s}
+button:hover{border-color:var(--sulphur);color:var(--sulphur)}
+button.live{background:var(--sulphur);border-color:var(--sulphur);color:var(--night)}
+.now{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.12em;
+  color:rgba(232,232,236,.5);margin-right:auto}
+.now b{color:var(--sulphur);font-weight:400}
+
+/* band read-out — one bar per band, in that band's grain colour */
+.bands{display:flex;gap:10px;align-items:center}
+.band{width:54px}
+.band span{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.16em;
+  color:rgba(232,232,236,.35);display:block;margin-bottom:4px}
+.band i{display:block;height:3px;width:0%;border-radius:2px;transition:width .05s linear}
+#bBass i{background:var(--violet)} #bMid i{background:var(--acid)} #bTre i{background:var(--sulphur)}
+.beat{width:9px;height:9px;border-radius:50%;background:#2A2C36;transition:background .04s}
+.beat.hit{background:var(--acid)}
+
+.gain{display:flex;align-items:center;gap:8px;
+  font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;
+  color:rgba(232,232,236,.4)}
+input[type=range]{width:84px;accent-color:var(--sulphur)}
+label.file input{display:none}
+@media (prefers-reduced-motion:reduce){#dunes{display:none}}
+</style>
+</head>
+<body>
+
+<canvas id="dunes"></canvas>
+
+<div class="wrap">
+  <header>
+    <div class="mark">RÁDIO <span>DUNA</span></div>
+    <div class="meta">Munich · 24h · 128 kbps</div>
+  </header>
+
+  <h1>Sound you can <em>walk through</em></h1>
+  <p class="lede">Turn on the dune layer and the broadcast starts drifting across the page as
+  loose polygonal grain. The wind speed is the track's loudness; every peak repaints the sand.
+  Move the cursor and the grains catch on it. Everything underneath stays clickable.</p>
+
+  <div class="rows">
+    <div class="row" tabindex="0"><div class="time">03:12</div><div><div class="title">Areia Fina</div><div class="artist">Tereza Nunes</div></div><div class="tag">on air</div></div>
+    <div class="row" tabindex="0"><div class="time">21:40</div><div><div class="title">Night Ferry, Slow Diesel</div><div class="artist">Halvard Sund</div></div><div class="tag">long form</div></div>
+    <div class="row" tabindex="0"><div class="time">06:55</div><div><div class="title">Barometer Falling</div><div class="artist">Ana Belo &amp; the Static Choir</div></div><div class="tag">session</div></div>
+    <div class="row" tabindex="0"><div class="time">14:08</div><div><div class="title">Field Notes: Kalahari</div><div class="artist">spoken word</div></div><div class="tag">voice</div></div>
+  </div>
+</div>
+
+<div class="player">
+  <div class="now">Now playing — <b id="src">nothing</b></div>
+  <div class="bands">
+    <div class="beat" id="beatLamp"></div>
+    <div class="band" id="bBass"><span>BASS</span><i></i></div>
+    <div class="band" id="bMid"><span>MID</span><i></i></div>
+    <div class="band" id="bTre"><span>TRE</span><i></i></div>
+  </div>
+  <div class="gain">GAIN<input type="range" id="gain" min="0.4" max="3" step="0.05" value="1.4"></div>
+  <button id="demo">Play demo signal</button>
+  <label class="file"><input type="file" id="file" accept="audio/*"><button type="button" onclick="this.parentNode.querySelector('input').click()">Load a track</button></label>
+  <button id="mic">Use microphone</button>
+  <button id="tab">Capture a tab</button>
+  <button id="toggle">Dune layer: off</button>
+</div>
+
+<script>
+/* =====================================================================
+   1. AUDIO GRAPH
+   Real stream: <audio crossorigin="anonymous"> + the host must send
+   Access-Control-Allow-Origin, or the analyser reads pure silence.
+   ===================================================================== */
+let ctx, analyser, monitor, sink, freq, playing = null;
+const raw = {bass:0, mid:0, treble:0, level:0};
+const bands = {bass:0, mid:0, treble:0, level:0};
+
+function initAudio(){
+  if(ctx) return;
+  ctx = new (window.AudioContext||window.webkitAudioContext)();
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 2048;
+  analyser.smoothingTimeConstant = 0.62;
+  analyser.minDecibels = -85;
+  analyser.maxDecibels = -12;
+
+  /* Audible path. Anything that should come out of the speakers connects
+     here IN PARALLEL with the analyser. The mic and tab capture never do —
+     routing them to an output is what caused the feedback loop earlier. */
+  monitor = ctx.createGain();
+  monitor.gain.value = 1;
+  monitor.connect(ctx.destination);
+
+  /* Silent sink — the important bit.
+     Web Audio only pulls samples through branches that reach the
+     destination. An AnalyserNode hanging off the end of nothing never gets
+     fed, so getByteFrequencyData() returns a flat array of zeros. Giving the
+     analyser a route to the destination through a gain of 0 keeps the branch
+     rendering while producing no sound and no feedback path. */
+  sink = ctx.createGain();
+  sink.gain.value = 0;
+  sink.connect(ctx.destination);
+  analyser.connect(sink);
+
+  freq = new Uint8Array(analyser.frequencyBinCount);
+}
+
+function stopCurrent(){
+  if(playing && playing.stop) playing.stop();
+  if(playing && playing.el) playing.el.pause();
+  if(playing && playing.stream) playing.stream.getTracks().forEach(t=>t.stop());
+  playing = null;
+  resetDemoBtn();          // another source took over — demo is no longer live
+}
+
+/* ---- auto-gain -------------------------------------------------------
+   The reason nothing moved before: a normal track rarely pushes a band
+   past ~0.25 of full scale. Each band now tracks its own rolling peak
+   and reports 0..1 relative to that, so quiet material still fills the
+   range. Slow decay (0.9985) so it adapts across a set, not per beat. */
+const agc = {bass:0.05, mid:0.05, treble:0.05, level:0.05};
+let userGain = 1.4;
+function normalise(k, v){
+  agc[k] = Math.max(agc[k]*0.9985, v, 0.03);
+  return Math.min(1.4, (v/agc[k]) * userGain);
+}
+
+/* ---- onset detection -------------------------------------------------
+   Spectral flux on the low end against a rolling mean. Peaks fire `flash`,
+   which is what repaints the sand and gusts the wind. */
+let prevBass = 0, flux = [], flash = 0, lastBeat = -1, beatCount = 0;
+const beatLamp = document.getElementById('beatLamp');
+
+function readAudio(t){
+  if(!analyser){ for(const k in bands) bands[k]=0; return; }
+  analyser.getByteFrequencyData(freq);
+  const n = freq.length;
+  const avg = (a,b)=>{ let s=0; for(let i=a;i<b;i++) s+=freq[i]; return s/((b-a)*255); };
+
+  raw.bass   = avg(2,  Math.floor(n*0.025));
+  raw.mid    = avg(Math.floor(n*0.025), Math.floor(n*0.16));
+  raw.treble = avg(Math.floor(n*0.16),  Math.floor(n*0.55));
+  raw.level  = avg(2, Math.floor(n*0.55));
+
+  bands.bass   = normalise('bass',   raw.bass);
+  bands.mid    = normalise('mid',    raw.mid);
+  bands.treble = normalise('treble', raw.treble);
+  bands.level  = normalise('level',  raw.level);
+
+  /* onset */
+  const f = Math.max(0, bands.bass - prevBass);
+  prevBass = bands.bass;
+  flux.push(f); if(flux.length > 40) flux.shift();
+  const mean = flux.reduce((a,b)=>a+b,0)/flux.length;
+  if(f > mean*1.9 + 0.012 && t - lastBeat > 0.13){
+    lastBeat = t; beatCount++;
+    flash = 1;
+    onBeat();
+  }
+  flash *= 0.90;
+
+  /* HUD */
+  document.querySelector('#bBass i').style.width = Math.min(100,bands.bass*100)+'%';
+  document.querySelector('#bMid i').style.width  = Math.min(100,bands.mid*100)+'%';
+  document.querySelector('#bTre i').style.width  = Math.min(100,bands.treble*100)+'%';
+  beatLamp.classList.toggle('hit', flash > 0.4);
+}
+
+document.getElementById('gain').oninput = e => userGain = +e.target.value;
+
+/* ---- sources -------------------------------------------------------- */
+const demoBtn = document.getElementById('demo');
+let demoOn = false;
+
+function resetDemoBtn(){
+  demoOn = false;
+  demoBtn.textContent = 'Play demo signal';
+}
+
+demoBtn.onclick = e=>{
+  if(demoOn){                       // pause: kill the sequencer, keep the graph
+    stopCurrent();
+    label('paused');
+    demoBtn.classList.remove('live');
+    resetDemoBtn();
+    return;
+  }
+  initAudio(); ctx.resume(); stopCurrent();
+  const out = ctx.createGain(); out.gain.value = .3;
+  out.connect(analyser);   // tap
+  out.connect(monitor);    // audible
+
+  const kick = ()=>{
+    const t0 = ctx.currentTime;
+    const o = ctx.createOscillator(), gn = ctx.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(150,t0);
+    o.frequency.exponentialRampToValueAtTime(42,t0+.14);
+    gn.gain.setValueAtTime(1,t0);
+    gn.gain.exponentialRampToValueAtTime(.001,t0+.45);
+    o.connect(gn).connect(out); o.start(t0); o.stop(t0+.5);
+  };
+  const hat = ()=>{
+    const t0 = ctx.currentTime;
+    const b = ctx.createBuffer(1, 2048, ctx.sampleRate), d = b.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const s = ctx.createBufferSource(); s.buffer=b;
+    const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7000;
+    const gn = ctx.createGain(); gn.gain.setValueAtTime(.35,t0);
+    gn.gain.exponentialRampToValueAtTime(.001,t0+.06);
+    s.connect(hp).connect(gn).connect(out); s.start(t0);
+  };
+  const pad = ctx.createOscillator(); pad.type='sawtooth';
+  const padF = ctx.createBiquadFilter(); padF.type='lowpass'; padF.frequency.value=700;
+  const padG = ctx.createGain(); padG.gain.value=.11;
+  pad.connect(padF).connect(padG).connect(out); pad.start();
+
+  let step = 0;
+  const seq = setInterval(()=>{
+    if(step%4===0 || step%8===6) kick();
+    if(step%2===1) hat();
+    if(step%8===0) pad.frequency.setTargetAtTime([55,73.4,49,65.4][(step/8)%4|0], ctx.currentTime, .1);
+    padF.frequency.setTargetAtTime(400+Math.random()*1800, ctx.currentTime, .3);
+    step++;
+  }, 240);
+  playing = {stop(){ clearInterval(seq); pad.stop(); }};
+  demoOn = true;
+  demoBtn.textContent = 'Pause demo';
+  label('demo signal · 125 bpm'); mark(demoBtn);
+};
+
+document.getElementById('file').onchange = ev=>{
+  const f = ev.target.files[0]; if(!f) return;
+  initAudio(); ctx.resume(); stopCurrent();
+  const el = new Audio(URL.createObjectURL(f)); el.loop = true;
+  const src = ctx.createMediaElementSource(el);
+  src.connect(analyser);
+  src.connect(monitor);
+  el.play();
+  playing = {el, src, stop(){ el.pause(); }};
+  label(f.name.replace(/\.[^.]+$/,'')); mark(null);
+};
+
+document.getElementById('mic').onclick = async e=>{
+  initAudio(); ctx.resume(); stopCurrent();
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:false, autoGainControl:false, noiseSuppression:false}
+    });
+    /* analyser ONLY — never to monitor, or the mic feeds the speakers.
+       Node kept on `playing` so it survives garbage collection. */
+    const node = ctx.createMediaStreamSource(stream);
+    node.connect(analyser);
+    playing = {stream, node, stop(){}};
+    label('microphone'); watchSilence('microphone');
+    mark(e.target);
+  }catch(err){ label('microphone blocked'); }
+};
+
+/* ---- capture audio from another tab ----------------------------------
+   getDisplayMedia with audio:true. In the picker the user must choose the
+   "Chrome Tab" / "Edge Tab" pane and tick "Also share tab audio" — the
+   checkbox only appears for tabs, not for windows or whole screens.
+   Chromium only: Firefox and Safari share screens but not tab audio.
+   Not routed to monitor — the source tab is already making the sound. */
+const tabBtn = document.getElementById('tab');
+tabBtn.onclick = async e=>{
+  if(!navigator.mediaDevices?.getDisplayMedia){
+    label('tab capture unsupported'); return;
+  }
+  initAudio(); ctx.resume(); stopCurrent();
+  try{
+    /* video:true is required — Chrome will not offer the tab picker without
+       it. The track is never rendered, just held so the share stays alive. */
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video:{frameRate:1}, audio:{echoCancellation:false, autoGainControl:false, noiseSuppression:false}
+    });
+    if(stream.getAudioTracks().length === 0){
+      stream.getTracks().forEach(t=>t.stop());
+      label('no tab audio — tick "share tab audio"');
+      return;
+    }
+    /* The source node must stay referenced. If it is only a temporary in an
+       expression, Chrome can collect it and the analyser silently dies a few
+       seconds after connecting — which looks exactly like "it connects but
+       nothing moves". Keeping it on `playing` pins it. */
+    const node = ctx.createMediaStreamSource(stream);
+    node.connect(analyser);
+    /* user hits Chrome's "Stop sharing" bar */
+    stream.getVideoTracks()[0].onended = ()=>{
+      if(playing && playing.stream === stream){
+        stopCurrent(); label('sharing ended');
+        tabBtn.classList.remove('live');
+      }
+    };
+    playing = {stream, node, stop(){}};
+    label('captured tab'); watchSilence('captured tab');
+    mark(e.target);
+  }catch(err){ label('tab capture cancelled'); }
+};
+
+function label(t){ document.getElementById('src').textContent = t; }
+
+/* If a source connects but the analyser never sees energy, say so rather
+   than leaving a still canvas and no explanation. */
+let silenceTimer = null;
+function watchSilence(name){
+  clearTimeout(silenceTimer);
+  let peak = 0;
+  const started = performance.now();
+  const check = ()=>{
+    peak = Math.max(peak, raw.level);
+    if(performance.now() - started < 2500){ silenceTimer = setTimeout(check, 200); return; }
+    if(peak < 0.004) label(name + ' — no signal reaching the analyser');
+  };
+  silenceTimer = setTimeout(check, 200);
+}
+function mark(btn){
+  document.querySelectorAll('.player button').forEach(b=>{ if(b.id!=='toggle') b.classList.remove('live'); });
+  if(btn) btn.classList.add('live');
+}
+
+/* =====================================================================
+   2. FLOW FIELD
+   ===================================================================== */
+function hash(x,y){ const n = Math.sin(x*127.1 + y*311.7)*43758.5453; return n - Math.floor(n); }
+function noise(x,y){
+  const xi=Math.floor(x), yi=Math.floor(y), xf=x-xi, yf=y-yi;
+  const u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf);
+  const a=hash(xi,yi), b=hash(xi+1,yi), c=hash(xi,yi+1), d=hash(xi+1,yi+1);
+  return a + (b-a)*u + (c-a)*v + (a-b-c+d)*u*v;
+}
+/* treble widens the turbulence: quiet = long parallel ridges,
+   bright/percussive = churning, broken-up field */
+function fieldAngle(x,y,t,turb){
+  const n = noise(x*0.0013 + t*0.05, y*0.0042);
+  return (n - .5) * (1.1 + turb*2.6);
+}
+
+/* =====================================================================
+   3. GRAINS — colour is band-mapped
+   bass → #6476FE   mid → #00FF00   treble → #E4FA00
+   ===================================================================== */
+const cv = document.getElementById('dunes'), g = cv.getContext('2d');
+const COLORS = [[100,118,254], [0,255,0], [228,250,0]];
+let W,H,DPR, on=false, grains=[];
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = W*DPR; cv.height = H*DPR;
+  g.setTransform(DPR,0,0,DPR,0,0);
+  g.clearRect(0,0,W,H);
+}
+addEventListener('resize', resize); resize();
+
+/* The whole field shares one colour. It steps to the next palette entry on
+   every detected onset, and eases toward it at 0.30 — fast enough to read as
+   a hit, slow enough that a busy hi-hat pattern blends instead of strobing.
+   Trails already on screen keep the previous colour, so each beat leaves a
+   visible band of the old hue behind the moving grain. */
+let colorIdx = 0;
+const cur = [100,118,254];
+
+function stepColor(){
+  colorIdx = (colorIdx + 1) % COLORS.length;
+}
+function easeColor(){
+  const tgt = COLORS[colorIdx];
+  for(let i=0;i<3;i++) cur[i] += (tgt[i] - cur[i]) * 0.30;
+}
+
+function spawn(p, edge){
+  p.x = edge ? -30 : Math.random()*W;
+  p.y = Math.random()*H;
+  p.vx = 0; p.vy = 0;
+  p.a = Math.random()*Math.PI*2;
+  p.spin = (Math.random()-.5)*0.05;
+  p.r = 2 + Math.random()*7;
+  p.sides = 3 + ((Math.random()*4)|0);
+  p.held = 0; p.hot = 0;
+  p.life = 0; p.max = 400 + Math.random()*900;
+  return p;
+}
+const COUNT = 560;
+for(let i=0;i<COUNT;i++) grains.push(spawn({}, false));
+
+/* on every detected peak: advance the colour and kick the field */
+function onBeat(){
+  stepColor();
+  const share = 0.35 + bands.level*0.4;      // louder peaks bloom more grain
+  for(const p of grains){
+    if(Math.random() < share){
+      p.hot = 1;
+      p.spin += (Math.random()-.5)*0.35;
+    }
+  }
+}
+
+const M = {x:-9999,y:-9999,down:false};
+addEventListener('pointermove', e=>{ M.x=e.clientX; M.y=e.clientY; }, {passive:true});
+addEventListener('pointerdown', ()=>M.down=true);
+addEventListener('pointerup',   ()=>M.down=false);
+addEventListener('pointerleave',()=>{ M.x=M.y=-9999; });
+
+/* =====================================================================
+   4. LOOP — wind speed IS the loudness
+   ===================================================================== */
+let t = 0, wind = 0.4;
+function frame(){
+  requestAnimationFrame(frame);
+  t += 0.016;
+  readAudio(t);
+  if(!on) return;
+
+  const {bass, mid, treble, level} = bands;
+  easeColor();
+
+  /* the wind. Non-linear so loud passages pull far ahead of quiet ones,
+     eased so it accelerates and decays instead of snapping. */
+  const target = 0.35 + Math.pow(level, 1.5)*11 + flash*7;
+  wind += (target - wind) * 0.14;
+
+  /* faster wind = less clearing per frame = longer motion streaks */
+  const fade = Math.max(0.022, 0.105 - wind*0.011);
+  g.globalCompositeOperation = 'destination-out';
+  g.fillStyle = `rgba(0,0,0,${fade})`;
+  g.fillRect(0,0,W,H);
+  g.globalCompositeOperation = 'lighter';
+
+  const R = 130 + bass*110;
+  const turb = treble;
+
+  for(const p of grains){
+    const ang = fieldAngle(p.x, p.y, t, turb);
+    p.vx += Math.cos(ang) * wind * 0.11;
+    p.vy += Math.sin(ang) * wind * 0.11;
+
+    const dx = p.x - M.x, dy = p.y - M.y, d2 = dx*dx + dy*dy;
+    if(d2 < R*R){
+      const d = Math.sqrt(d2) || 1, f = 1 - d/R;
+      const pull = M.down ? -0.9 : 0.35;
+      p.vx += (-dy/d)*f*1.5 + (dx/d)*f*pull;
+      p.vy += ( dx/d)*f*1.5 + (dy/d)*f*pull;
+      p.vx *= 0.87; p.vy *= 0.87;
+      p.spin += f*0.02;
+      p.held = Math.min(1, p.held + 0.12);
+    } else {
+      p.held *= 0.94;
+    }
+
+    p.vx *= 0.96; p.vy *= 0.96;
+    p.x += p.vx; p.y += p.vy;
+    p.a += p.spin + treble*0.10;
+    p.hot *= 0.90;
+    p.life++;
+
+    if(p.x < -70 || p.x > W+70 || p.y < -70 || p.y > H+70 || p.life > p.max){
+      spawn(p, true); continue;
+    }
+
+    /* size punches on the peak, alpha rides level + bloom */
+    const size  = p.r * (0.5 + bass*1.5 + flash*0.8 + p.held*0.9 + p.hot*0.7);
+    const alpha = Math.min(1, (0.10 + level*0.6 + p.hot*0.5 + p.held*0.45)
+                              * (1 - p.life/p.max));
+
+    g.beginPath();
+    for(let i=0;i<p.sides;i++){
+      const th = p.a + i*Math.PI*2/p.sides;
+      const px = p.x + Math.cos(th)*size, py = p.y + Math.sin(th)*size;
+      i ? g.lineTo(px,py) : g.moveTo(px,py);
+    }
+    g.closePath();
+    g.fillStyle = `rgba(${cur[0]|0},${cur[1]|0},${cur[2]|0},${alpha})`;
+    g.fill();
+    if(p.held > 0.3 || p.hot > 0.35){
+      g.strokeStyle = `rgba(255,255,255,${Math.max(p.held,p.hot)*0.5})`;
+      g.lineWidth = 0.7; g.stroke();
+    }
+  }
+}
+frame();
+
+const toggle = document.getElementById('toggle');
+toggle.onclick = ()=>{
+  on = !on;
+  cv.classList.toggle('on', on);
+  toggle.classList.toggle('live', on);
+  toggle.textContent = 'Dune layer: ' + (on ? 'on' : 'off');
+  if(!on) g.clearRect(0,0,W,H);
+};
+</script>
+</body>
+</html>

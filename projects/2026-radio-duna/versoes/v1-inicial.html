@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rádio Duna — audio-reactive dune layer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=Space+Grotesk:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#0A0C14;
+  --night-2:#12151F;
+  --sand:#E4B363;
+  --rust:#C1592F;
+  --bone:#EDE3D2;
+  --dusk:#6E5A8C;
+  --line:rgba(237,227,210,.14);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--night);color:var(--bone);
+  font-family:'Space Grotesk',system-ui,sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}
+
+/* ---- the overlay ---------------------------------------------------- */
+#dunes{
+  position:fixed;inset:0;width:100%;height:100%;
+  z-index:50;
+  pointer-events:none;          /* content underneath stays fully usable */
+  mix-blend-mode:screen;        /* grains glow over dark content */
+  opacity:0;transition:opacity .8s ease;
+}
+#dunes.on{opacity:1}
+
+/* ---- page ----------------------------------------------------------- */
+.wrap{max-width:900px;margin:0 auto;padding:56px 28px 180px}
+header{display:flex;justify-content:space-between;align-items:baseline;
+  border-bottom:1px solid var(--line);padding-bottom:18px}
+.mark{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;letter-spacing:-.02em}
+.mark span{color:var(--sand)}
+.meta{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:rgba(237,227,210,.5)}
+
+h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(42px,9vw,88px);
+  line-height:.94;letter-spacing:-.035em;margin:64px 0 20px;max-width:12ch}
+h1 em{font-style:normal;color:var(--sand)}
+.lede{font-size:19px;line-height:1.6;max-width:52ch;color:rgba(237,227,210,.72)}
+
+.rows{margin-top:72px;border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:64px 1fr auto;gap:20px;align-items:center;
+  padding:20px 8px;border-bottom:1px solid var(--line);
+  transition:background .25s,padding-left .25s;cursor:pointer}
+.row:hover{background:rgba(228,179,99,.07);padding-left:18px}
+.row:focus-visible{outline:2px solid var(--sand);outline-offset:-2px}
+.time{font-family:'DM Mono',monospace;font-size:12px;color:var(--sand)}
+.title{font-size:17px}
+.artist{font-size:13px;color:rgba(237,227,210,.5);margin-top:3px}
+.tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:rgba(237,227,210,.45);
+  border:1px solid var(--line);border-radius:999px;padding:5px 11px}
+
+/* ---- player bar ----------------------------------------------------- */
+.player{position:fixed;left:0;right:0;bottom:0;z-index:60;
+  background:rgba(10,12,20,.82);backdrop-filter:blur(18px);
+  border-top:1px solid var(--line);padding:14px 22px;
+  display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+button{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--bone);background:transparent;
+  border:1px solid var(--line);border-radius:999px;padding:9px 15px;cursor:pointer;
+  transition:border-color .2s,color .2s,background .2s}
+button:hover{border-color:var(--sand);color:var(--sand)}
+button.live{background:var(--sand);border-color:var(--sand);color:var(--night)}
+.now{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.12em;
+  color:rgba(237,227,210,.55);margin-right:auto}
+.now b{color:var(--sand);font-weight:400}
+.levels{display:flex;gap:3px;align-items:flex-end;height:22px;width:64px}
+.levels i{flex:1;background:var(--sand);height:2px;border-radius:1px;
+  transform-origin:bottom;transition:height .06s linear}
+label.file{display:inline-block}
+label.file input{display:none}
+@media (prefers-reduced-motion:reduce){#dunes{display:none}}
+</style>
+</head>
+<body>
+
+<canvas id="dunes"></canvas>
+
+<div class="wrap">
+  <header>
+    <div class="mark">RÁDIO <span>DUNA</span></div>
+    <div class="meta">Munich · 24h · 128 kbps</div>
+  </header>
+
+  <h1>Sound you can <em>walk through</em></h1>
+  <p class="lede">Turn on the dune layer and the broadcast starts drifting across the page as
+  loose polygonal grain. Move the cursor and the grains catch on it, piling into ridges before
+  the wind takes them again. Everything under it stays clickable.</p>
+
+  <div class="rows">
+    <div class="row" tabindex="0"><div class="time">03:12</div><div><div class="title">Areia Fina</div><div class="artist">Tereza Nunes</div></div><div class="tag">on air</div></div>
+    <div class="row" tabindex="0"><div class="time">21:40</div><div><div class="title">Night Ferry, Slow Diesel</div><div class="artist">Halvard Sund</div></div><div class="tag">long form</div></div>
+    <div class="row" tabindex="0"><div class="time">06:55</div><div><div class="title">Barometer Falling</div><div class="artist">Ana Belo &amp; the Static Choir</div></div><div class="tag">session</div></div>
+    <div class="row" tabindex="0"><div class="time">14:08</div><div><div class="title">Field Notes: Kalahari</div><div class="artist">spoken word</div></div><div class="tag">voice</div></div>
+  </div>
+</div>
+
+<div class="player">
+  <div class="now">Now playing — <b id="src">nothing</b></div>
+  <div class="levels" id="levels"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <button id="demo">Play demo signal</button>
+  <label class="file"><input type="file" id="file" accept="audio/*"><button type="button" onclick="this.parentNode.querySelector('input').click()">Load a track</button></label>
+  <button id="mic">Use microphone</button>
+  <button id="toggle">Dune layer: off</button>
+</div>
+
+<script>
+/* =====================================================================
+   1. AUDIO GRAPH
+   Any source (stream, file, mic) is routed through one AnalyserNode.
+   For a real radio stream: <audio crossorigin="anonymous"> AND the
+   stream host must send Access-Control-Allow-Origin, otherwise the
+   analyser is fed silence — this is the single most common failure.
+   ===================================================================== */
+let ctx, analyser, freq, playing = null;
+const bands = {bass:0, mid:0, treble:0, level:0};
+
+function initAudio(){
+  if(ctx) return;
+  ctx = new (window.AudioContext||window.webkitAudioContext)();
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 1024;              // 512 usable bins
+  analyser.smoothingTimeConstant = 0.82; // stops the visuals from jittering
+  analyser.connect(ctx.destination);
+  freq = new Uint8Array(analyser.frequencyBinCount);
+}
+
+function stopCurrent(){
+  if(playing && playing.stop) playing.stop();
+  if(playing && playing.el){ playing.el.pause(); }
+  if(playing && playing.stream) playing.stream.getTracks().forEach(t=>t.stop());
+  playing = null;
+}
+
+/* read the analyser once per frame and reduce it to four numbers */
+function readAudio(){
+  if(!analyser){ bands.bass=bands.mid=bands.treble=bands.level=0; return; }
+  analyser.getByteFrequencyData(freq);
+  const n = freq.length;
+  const avg = (a,b)=>{ let s=0; for(let i=a;i<b;i++) s+=freq[i]; return s/((b-a)*255); };
+  // bins are linear in Hz; these splits ≈ 0–250Hz / 250–2kHz / 2k–8kHz
+  bands.bass   = avg(1, Math.floor(n*0.03));
+  bands.mid    = avg(Math.floor(n*0.03), Math.floor(n*0.20));
+  bands.treble = avg(Math.floor(n*0.20), Math.floor(n*0.60));
+  bands.level  = avg(1, Math.floor(n*0.6));
+}
+
+/* ---- sources -------------------------------------------------------- */
+document.getElementById('demo').onclick = e=>{
+  initAudio(); ctx.resume(); stopCurrent();
+  // a small generative bed so there is something to react to
+  const out = ctx.createGain(); out.gain.value = .28; out.connect(analyser);
+  const sub = ctx.createOscillator(); sub.type='sine';
+  const subGain = ctx.createGain(); subGain.gain.value=0;
+  sub.connect(subGain).connect(out); sub.start();
+  const noise = ctx.createBufferSource();
+  const buf = ctx.createBuffer(1, ctx.sampleRate*3, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i] = (Math.random()*2-1)*0.6;
+  noise.buffer = buf; noise.loop = true;
+  const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=900; bp.Q.value=.8;
+  const nGain = ctx.createGain(); nGain.gain.value=.35;
+  noise.connect(bp).connect(nGain).connect(out); noise.start();
+  let step = 0;
+  const tick = setInterval(()=>{
+    const t = ctx.currentTime;
+    const notes = [41.2, 55, 49, 36.7];
+    sub.frequency.setValueAtTime(notes[step%4], t);
+    subGain.gain.cancelScheduledValues(t);
+    subGain.gain.setValueAtTime(.9, t);
+    subGain.gain.exponentialRampToValueAtTime(.001, t+.55);
+    bp.frequency.setTargetAtTime(500 + Math.random()*2400, t, .25);
+    step++;
+  }, 620);
+  playing = {stop(){ clearInterval(tick); sub.stop(); noise.stop(); }};
+  label('demo signal'); mark(e.target);
+};
+
+document.getElementById('file').onchange = ev=>{
+  const f = ev.target.files[0]; if(!f) return;
+  initAudio(); ctx.resume(); stopCurrent();
+  const el = new Audio(URL.createObjectURL(f)); el.loop = true;
+  ctx.createMediaElementSource(el).connect(analyser);
+  el.play();
+  playing = {el, stop(){ el.pause(); }};
+  label(f.name.replace(/\.[^.]+$/,'')); mark(null);
+};
+
+document.getElementById('mic').onclick = async e=>{
+  initAudio(); ctx.resume(); stopCurrent();
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false}});
+    ctx.createMediaStreamSource(stream).connect(analyser); // not to destination — avoids feedback
+    playing = {stream, stop(){}};
+    label('microphone'); mark(e.target);
+  }catch(err){ label('microphone blocked'); }
+};
+
+function label(t){ document.getElementById('src').textContent = t; }
+function mark(btn){
+  document.querySelectorAll('.player button').forEach(b=>{ if(b.id!=='toggle') b.classList.remove('live'); });
+  if(btn) btn.classList.add('live');
+}
+
+/* small level meter in the player */
+const meter = [...document.querySelectorAll('#levels i')];
+
+/* =====================================================================
+   2. FLOW FIELD — cheap value noise, no library
+   ===================================================================== */
+function hash(x,y){ const n = Math.sin(x*127.1 + y*311.7)*43758.5453; return n - Math.floor(n); }
+function noise(x,y){
+  const xi=Math.floor(x), yi=Math.floor(y), xf=x-xi, yf=y-yi;
+  const u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf);
+  const a=hash(xi,yi), b=hash(xi+1,yi), c=hash(xi,yi+1), d=hash(xi+1,yi+1);
+  return a + (b-a)*u + (c-a)*v + (a-b-c+d)*u*v;
+}
+/* dune bias: flow is mostly rightward, noise only bends it ±50°,
+   and the vertical sampling is 3× finer than horizontal → long ridges */
+function fieldAngle(x,y,t){
+  const n = noise(x*0.0013 + t*0.06, y*0.0042);
+  return (n - .5) * 1.8;
+}
+
+/* =====================================================================
+   3. GRAINS
+   ===================================================================== */
+const cv = document.getElementById('dunes'), g = cv.getContext('2d');
+let W, H, DPR;
+const PALETTE = [[228,179,99],[193,89,47],[237,227,210],[110,90,140]];
+let grains = [], on = false;
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = W*DPR; cv.height = H*DPR;
+  g.setTransform(DPR,0,0,DPR,0,0);
+  g.clearRect(0,0,W,H);
+}
+addEventListener('resize', resize); resize();
+
+function spawn(edge){
+  const c = PALETTE[(Math.random()*PALETTE.length)|0];
+  return {
+    x: edge ? -30 : Math.random()*W,
+    y: Math.random()*H,
+    vx: 0, vy: 0,
+    a: Math.random()*Math.PI*2,
+    spin: (Math.random()-.5)*0.05,
+    r: 2 + Math.random()*7,           // base radius, audio scales it
+    sides: 3 + ((Math.random()*4)|0), // triangles → hexagons
+    c, held: 0,
+    life: 0, max: 400 + Math.random()*900
+  };
+}
+const COUNT = 520;
+for(let i=0;i<COUNT;i++) grains.push(spawn(false));
+
+/* ---- pointer: tracked on window, canvas itself never receives events -- */
+const M = {x:-9999, y:-9999, px:0, py:0, speed:0, down:false};
+addEventListener('pointermove', e=>{
+  M.px = M.x; M.py = M.y; M.x = e.clientX; M.y = e.clientY;
+  M.speed = Math.min(Math.hypot(M.x-M.px, M.y-M.py), 60);
+}, {passive:true});
+addEventListener('pointerdown', ()=>M.down=true);
+addEventListener('pointerup',   ()=>M.down=false);
+addEventListener('pointerleave',()=>{ M.x=M.y=-9999; });
+
+/* =====================================================================
+   4. LOOP
+   ===================================================================== */
+let t = 0;
+function frame(){
+  requestAnimationFrame(frame);
+  readAudio();
+  meter.forEach((el,i)=>{ el.style.height = (2 + (freq? freq[4+i*20]/255:0)*20) + 'px'; });
+  if(!on) return;
+
+  t += 0.016;
+  const {bass, mid, treble, level} = bands;
+
+  /* trails: louder = faster clear = crisper grain,
+     quiet = long smear. This one line does most of the "sand" feel. */
+  const fade = 0.045 + level*0.11;
+  g.globalCompositeOperation = 'destination-out';
+  g.fillStyle = `rgba(0,0,0,${fade})`;
+  g.fillRect(0,0,W,H);
+  g.globalCompositeOperation = 'lighter';
+
+  const R = 130 + bass*90;            // cursor capture radius breathes with bass
+  const drift = 0.55 + bass*2.2;
+
+  for(const p of grains){
+    /* flow field steering */
+    const ang = fieldAngle(p.x, p.y, t);
+    p.vx += Math.cos(ang)*drift*0.09;
+    p.vy += Math.sin(ang)*drift*0.09;
+
+    /* cursor: tangential swirl + strong damping = grains pile up and smear */
+    const dx = p.x - M.x, dy = p.y - M.y, d2 = dx*dx + dy*dy;
+    if(d2 < R*R){
+      const d = Math.sqrt(d2) || 1, f = 1 - d/R;
+      const pull = M.down ? -0.9 : 0.35;     // click to gather instead of swirl
+      p.vx += (-dy/d) * f * 1.5 + (dx/d)*f*pull;
+      p.vy += ( dx/d) * f * 1.5 + (dy/d)*f*pull;
+      p.vx *= 0.88; p.vy *= 0.88;            // held in place
+      p.spin += f * 0.02;
+      p.held = Math.min(1, p.held + 0.12);
+    } else {
+      p.held *= 0.94;
+    }
+
+    p.vx *= 0.96; p.vy *= 0.96;
+    p.x += p.vx; p.y += p.vy;
+    p.a += p.spin + treble*0.06;
+    p.life++;
+
+    /* recycle off-screen or expired grains */
+    if(p.x < -60 || p.x > W+60 || p.y < -60 || p.y > H+60 || p.life > p.max){
+      Object.assign(p, spawn(true));
+      continue;
+    }
+
+    /* draw the polygon — size and alpha ride the audio */
+    const size = p.r * (0.55 + bass*1.3 + p.held*0.9);
+    const alpha = (0.10 + level*0.55 + p.held*0.45) * (1 - p.life/p.max);
+    g.beginPath();
+    for(let i=0;i<p.sides;i++){
+      const th = p.a + i*Math.PI*2/p.sides;
+      const px = p.x + Math.cos(th)*size, py = p.y + Math.sin(th)*size;
+      i ? g.lineTo(px,py) : g.moveTo(px,py);
+    }
+    g.closePath();
+    const [r,gr,b] = p.c;
+    g.fillStyle = `rgba(${r},${gr},${b},${alpha})`;
+    g.fill();
+    if(p.held > 0.3){                      // caught grains get an edge
+      g.strokeStyle = `rgba(237,227,210,${p.held*0.5})`;
+      g.lineWidth = 0.7; g.stroke();
+    }
+  }
+}
+frame();
+
+/* ---- the toggle the brief asks for ---------------------------------- */
+const toggle = document.getElementById('toggle');
+toggle.onclick = ()=>{
+  on = !on;
+  cv.classList.toggle('on', on);
+  toggle.classList.toggle('live', on);
+  toggle.textContent = 'Dune layer: ' + (on ? 'on' : 'off');
+  if(!on) g.clearRect(0,0,W,H);
+};
+</script>
+</body>
+</html>
