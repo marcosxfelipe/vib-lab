@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hand Animator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #1a1714;
+    --panel: #221f1b;
+    --border: #3a342c;
+    --accent: #ECE815;
+    --orange: #DD6729;
+    --text: #e8e0d4;
+    --muted: #7a6f62;
+    --selected: #ECE815;
+    --timeline-h: 200px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  #toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .tool-label { color: var(--muted); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  .btn {
+    background: var(--border);
+    border: 1px solid #4a4238;
+    color: var(--text);
+    padding: 5px 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    transition: all 0.1s;
+  }
+  .btn:hover { background: #4a4238; }
+  .btn.primary { background: var(--accent); color: #1a1714; border-color: var(--accent); font-weight: bold; }
+  .btn.primary:hover { background: #d4d010; }
+  .btn.danger { background: #3a1a1a; border-color: #6a2020; color: #e88; }
+  .btn.danger:hover { background: #4a2020; }
+
+  #main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  #canvas-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #111;
+    background-image: radial-gradient(circle, #2a2520 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  #stage {
+    position: absolute;
+    transform-origin: center center;
+  }
+
+  #hand-svg {
+    position: absolute;
+    cursor: grab;
+    transform-origin: center center;
+    transition: filter 0.1s;
+  }
+  #hand-svg:active { cursor: grabbing; }
+  #hand-svg.selected { filter: drop-shadow(0 0 8px rgba(236,232,21,0.4)); }
+
+  #hand-svg path {
+    cursor: pointer;
+    transition: filter 0.1s;
+  }
+  #hand-svg path:hover { filter: brightness(1.3); }
+  #hand-svg path.bone-selected { filter: brightness(1.5) drop-shadow(0 0 4px var(--accent)); }
+
+  #sidebar {
+    width: 200px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .panel-title {
+    padding: 10px 14px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  #bone-list {
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .bone-item {
+    padding: 7px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #2a2520;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.1s;
+  }
+  .bone-item:hover { background: #2a2520; }
+  .bone-item.active { background: #2a2a10; color: var(--accent); }
+  .bone-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); flex-shrink: 0; }
+  .bone-item.active .dot { background: var(--accent); }
+
+  #props-panel {
+    border-top: 1px solid var(--border);
+    padding: 12px 14px;
+  }
+
+  .prop-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .prop-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100px;
+    height: 3px;
+    background: var(--border);
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  .val-display {
+    color: var(--accent);
+    font-size: 11px;
+    min-width: 32px;
+    text-align: right;
+  }
+
+  #timeline-area {
+    height: var(--timeline-h);
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  #tl-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  #frame-display {
+    color: var(--accent);
+    font-size: 13px;
+    min-width: 60px;
+  }
+
+  #tl-scroll {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+  }
+
+  #tl-inner {
+    position: relative;
+    height: 100%;
+    min-width: 100%;
+  }
+
+  #ruler {
+    height: 22px;
+    background: #1e1b18;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  #tracks {
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .track-row {
+    height: 32px;
+    border-bottom: 1px solid #2a2520;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .track-label {
+    width: 140px;
+    flex-shrink: 0;
+    padding: 0 14px;
+    color: var(--muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-right: 1px solid var(--border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .track-lane {
+    flex: 1;
+    position: relative;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .keyframe-diamond {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: var(--accent);
+    transform: rotate(45deg) translate(-50%, -50%);
+    top: 50%;
+    cursor: grab;
+    transition: background 0.1s;
+    z-index: 2;
+  }
+  .keyframe-diamond:hover { background: #fff; }
+  .keyframe-diamond.active { background: var(--orange); }
+
+  #playhead {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    background: var(--orange);
+    pointer-events: none;
+    z-index: 10;
+  }
+  #playhead::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -5px;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 8px solid var(--orange);
+  }
+
+  #tl-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .ruler-tick {
+    position: absolute;
+    bottom: 0;
+    width: 1px;
+    background: var(--border);
+    font-size: 9px;
+    color: var(--muted);
+    padding-bottom: 2px;
+    text-align: center;
+    transform: translateX(-50%);
+  }
+  .ruler-tick.major { background: #5a5040; }
+
+  #export-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    font-size: 14px;
+    z-index: 100;
+  }
+  #export-overlay.show { display: flex; }
+
+  .hint {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    color: var(--muted);
+    font-size: 10px;
+    pointer-events: none;
+    line-height: 1.8;
+  }
+
+  select {
+    background: var(--border);
+    border: 1px solid #4a4238;
+    color: var(--text);
+    padding: 4px 8px;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  #fps-label { color: var(--muted); font-size: 10px; }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <span class="tool-label">Hand Animator</span>
+  <div style="width:1px;height:20px;background:var(--border)"></div>
+  <button class="btn primary" id="btn-add-kf">+ Keyframe</button>
+  <button class="btn" id="btn-play">▶ Play</button>
+  <button class="btn" id="btn-stop">■ Stop</button>
+  <button class="btn" id="btn-reset-pose">Reset Pose</button>
+  <div style="flex:1"></div>
+  <span class="tool-label">Duration</span>
+  <select id="dur-select">
+    <option value="60">2s</option>
+    <option value="90" selected>3s</option>
+    <option value="120">4s</option>
+    <option value="180">6s</option>
+    <option value="240">8s</option>
+  </select>
+  <span class="tool-label">FPS</span>
+  <select id="fps-select">
+    <option value="24" selected>24</option>
+    <option value="30">30</option>
+  </select>
+  <div style="width:1px;height:20px;background:var(--border)"></div>
+  <button class="btn" id="btn-export-frames">Export Frames</button>
+  <button class="btn" id="btn-export-video">Export Video</button>
+</div>
+
+<div id="main">
+  <div id="canvas-area">
+    <div id="stage">
+      <svg id="hand-svg" width="713" height="902" viewBox="0 0 713 902" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path id="bg" d="M712.98 0H0V901.97H712.98V0Z" fill="#DD6729"/>
+        <path id="wrist" d="M296.93 609.29L461.07 612.55L478.85 767.81H283.06L296.93 609.29Z" fill="#ECE815"/>
+        <path id="palm" d="M470.38 603.62L297.44 602.47L279.06 378.94H484.96L470.38 603.62Z" fill="#ECE815"/>
+        <path id="middle-base" d="M320.02 287.6H283.42L279.06 373.26H325.47L320.02 287.6Z" fill="#ECE815"/>
+        <path id="middle-mid" d="M320.01 195.93H283.42V280.03H320.01V195.93Z" fill="#ECE815"/>
+        <path id="middle-tip" d="M302.09 144.34C293.97 144.34 287.19 149.42 286.4 156.09L283.42 190.49H320.01L317.8 156.41C317.2 149.61 310.34 144.35 302.08 144.35L302.09 144.34Z" fill="#ECE815"/>
+        <path id="thumb-base" d="M291.12 603.62L283.42 497.75L267.59 468.56H215.01L291.12 603.62Z" fill="#ECE815"/>
+        <path id="thumb-mid" d="M262.59 384.01H219.01L215.01 464.26H267.59L262.59 384.01Z" fill="#ECE815"/>
+        <path id="thumb-tip" d="M246.29 309.74C238.84 309.74 222.62 315.84 221.9 323.83L219.52 379.71H263.09L260.71 324.2C260.16 316.05 253.87 309.74 246.29 309.74Z" fill="#ECE815"/>
+        <path id="ring-base" d="M428.96 288.87H395.39L391.39 373.26H433.96L428.96 288.87Z" fill="#ECE815"/>
+        <path id="ring-mid" d="M428.96 198.55H395.39V281.41H428.96V198.55Z" fill="#ECE815"/>
+        <path id="ring-tip" d="M412.51 147.72C405.06 147.72 398.84 152.73 398.12 159.29L395.38 193.18H428.95L426.92 159.6C426.37 152.9 420.08 147.72 412.5 147.72H412.51Z" fill="#ECE815"/>
+        <path id="pinky-base" d="M476.35 304.76H445.11L441.39 373.16H481L476.35 304.76Z" fill="#ECE815"/>
+        <path id="pinky-mid" d="M476.35 231.57H445.11V298.72H476.35V231.57Z" fill="#ECE815"/>
+        <path id="pinky-tip" d="M461.04 190.38C454.11 190.38 448.32 194.44 447.65 199.76L445.11 227.22H476.35L474.46 200.01C473.95 194.58 468.09 190.38 461.04 190.38Z" fill="#ECE815"/>
+        <path id="index-base" d="M376.1 281.77H336.75L332.06 373.26H381.96L376.1 281.77Z" fill="#ECE815"/>
+        <path id="index-mid" d="M376.1 183.85H336.75V273.68H376.1V183.85Z" fill="#ECE815"/>
+        <path id="index-tip" d="M356.82 128.75C348.09 128.75 340.8 134.18 339.95 141.3L336.74 178.04H376.09L373.72 141.63C373.08 134.37 365.7 128.75 356.82 128.75Z" fill="#ECE815"/>
+      </svg>
+    </div>
+    <div class="hint">
+      Click bone to select · Drag hand to move · Use sliders to rotate<br>
+      Press + Keyframe to record pose · Drag timeline to scrub
+    </div>
+    <div id="export-overlay">
+      <div id="export-status">Exporting...</div>
+      <div id="export-progress" style="color:var(--accent)"></div>
+    </div>
+  </div>
+
+  <div id="sidebar">
+    <div class="panel-title">Bones</div>
+    <div id="bone-list"></div>
+    <div id="props-panel">
+      <div class="panel-title" style="padding:0 0 8px 0;border:none">Transform</div>
+      <div class="prop-row">
+        <span class="prop-label">Rotate</span>
+        <input type="range" id="rot-slider" min="-90" max="90" value="0" step="1">
+        <span class="val-display" id="rot-val">0°</span>
+      </div>
+      <div class="prop-row">
+        <span class="prop-label">Curl</span>
+        <input type="range" id="curl-slider" min="0" max="80" value="0" step="1">
+        <span class="val-display" id="curl-val">0°</span>
+      </div>
+      <div style="margin-top:8px">
+        <div class="panel-title" style="padding:0 0 8px 0;border:none">Hand Position</div>
+        <div class="prop-row">
+          <span class="prop-label">X</span>
+          <input type="range" id="hand-x" min="-300" max="300" value="0" step="1">
+          <span class="val-display" id="x-val">0</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Y</span>
+          <input type="range" id="hand-y" min="-300" max="300" value="0" step="1">
+          <span class="val-display" id="y-val">0</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Scale</span>
+          <input type="range" id="hand-scale" min="20" max="150" value="50" step="1">
+          <span class="val-display" id="scale-val">50%</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Rotate</span>
+          <input type="range" id="hand-rot" min="-180" max="180" value="0" step="1">
+          <span class="val-display" id="hrot-val">0°</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="timeline-area">
+  <div id="tl-controls">
+    <span id="frame-display">F: 0</span>
+    <button class="btn" id="btn-prev-kf">|◀</button>
+    <button class="btn" id="btn-next-kf">▶|</button>
+    <button class="btn danger" id="btn-del-kf">Del KF</button>
+    <select id="easing-select">
+      <option value="linear">Linear</option>
+      <option value="ease" selected>Ease</option>
+      <option value="ease-in">Ease In</option>
+      <option value="ease-out">Ease Out</option>
+      <option value="hold">Hold</option>
+    </select>
+    <span style="color:var(--muted);font-size:10px;margin-left:8px">easing for selected KF</span>
+  </div>
+  <div id="tl-body">
+    <canvas id="ruler" height="22"></canvas>
+    <div id="tracks"></div>
+  </div>
+</div>
+
+<script>
+const BONES = [
+  { id: 'wrist',       label: 'Wrist',        pivot: { x: 380, y: 609 } },
+  { id: 'palm',        label: 'Palm',          pivot: { x: 382, y: 603 } },
+  { id: 'thumb-tip',   label: 'Thumb tip',     pivot: { x: 241, y: 379 } },
+  { id: 'thumb-mid',   label: 'Thumb mid',     pivot: { x: 241, y: 464 } },
+  { id: 'thumb-base',  label: 'Thumb base',    pivot: { x: 253, y: 497 } },
+  { id: 'index-tip',   label: 'Index tip',     pivot: { x: 357, y: 178 } },
+  { id: 'index-mid',   label: 'Index mid',     pivot: { x: 357, y: 273 } },
+  { id: 'index-base',  label: 'Index base',    pivot: { x: 357, y: 281 } },
+  { id: 'middle-tip',  label: 'Middle tip',    pivot: { x: 302, y: 190 } },
+  { id: 'middle-mid',  label: 'Middle mid',    pivot: { x: 302, y: 280 } },
+  { id: 'middle-base', label: 'Middle base',   pivot: { x: 302, y: 287 } },
+  { id: 'ring-tip',    label: 'Ring tip',      pivot: { x: 412, y: 193 } },
+  { id: 'ring-mid',    label: 'Ring mid',      pivot: { x: 412, y: 281 } },
+  { id: 'ring-base',   label: 'Ring base',     pivot: { x: 412, y: 288 } },
+  { id: 'pinky-tip',   label: 'Pinky tip',     pivot: { x: 461, y: 227 } },
+  { id: 'pinky-mid',   label: 'Pinky mid',     pivot: { x: 461, y: 298 } },
+  { id: 'pinky-base',  label: 'Pinky base',    pivot: { x: 461, y: 304 } },
+];
+
+const TOTAL_FRAMES = () => parseInt(document.getElementById('dur-select').value);
+const FPS = () => parseInt(document.getElementById('fps-select').value);
+const PX_PER_FRAME = 8;
+const LABEL_W = 140;
+
+let currentFrame = 0;
+let selectedBone = null;
+let selectedKF = null;
+let isPlaying = false;
+let playInterval = null;
+
+// pose state: boneId -> { rotation, curl }
+// global hand state
+let handState = { x: 0, y: 0, scale: 50, rotation: 0 };
+
+// keyframes: array of { frame, bones: {id: {rotation, curl}}, hand: {x,y,scale,rotation} }
+let keyframes = [];
+
+// current bone rotations (live)
+let boneRotations = {};
+BONES.forEach(b => boneRotations[b.id] = { rotation: 0, curl: 0 });
+
+function getBoneDefaultRotation(id) { return { rotation: 0, curl: 0 }; }
+
+// Build sidebar bone list
+const boneList = document.getElementById('bone-list');
+BONES.forEach(b => {
+  const el = document.createElement('div');
+  el.className = 'bone-item';
+  el.dataset.id = b.id;
+  el.innerHTML = `<span class="dot"></span>${b.label}`;
+  el.addEventListener('click', () => selectBone(b.id));
+  boneList.appendChild(el);
+});
+
+function selectBone(id) {
+  selectedBone = id;
+  document.querySelectorAll('.bone-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+  document.querySelectorAll('#hand-svg path').forEach(el => {
+    el.classList.toggle('bone-selected', el.id === id);
+  });
+  const r = boneRotations[id] || { rotation: 0, curl: 0 };
+  document.getElementById('rot-slider').value = r.rotation;
+  document.getElementById('rot-val').textContent = r.rotation + '°';
+  document.getElementById('curl-slider').value = r.curl;
+  document.getElementById('curl-val').textContent = r.curl + '°';
+}
+
+// Bone click
+document.querySelectorAll('#hand-svg path').forEach(el => {
+  if (el.id === 'bg') return;
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    selectBone(el.id);
+  });
+});
+
+// Rotation slider
+document.getElementById('rot-slider').addEventListener('input', function() {
+  document.getElementById('rot-val').textContent = this.value + '°';
+  if (selectedBone) {
+    boneRotations[selectedBone].rotation = parseFloat(this.value);
+    applyBoneTransforms();
+  }
+});
+
+document.getElementById('curl-slider').addEventListener('input', function() {
+  document.getElementById('curl-val').textContent = this.value + '°';
+  if (selectedBone) {
+    boneRotations[selectedBone].curl = parseFloat(this.value);
+    applyBoneTransforms();
+  }
+});
+
+// Hand transform sliders
+['hand-x','hand-y','hand-scale','hand-rot'].forEach(id => {
+  document.getElementById(id).addEventListener('input', function() {
+    const v = parseFloat(this.value);
+    if (id === 'hand-x') { handState.x = v; document.getElementById('x-val').textContent = v; }
+    if (id === 'hand-y') { handState.y = v; document.getElementById('y-val').textContent = v; }
+    if (id === 'hand-scale') { handState.scale = v; document.getElementById('scale-val').textContent = v + '%'; }
+    if (id === 'hand-rot') { handState.rotation = v; document.getElementById('hrot-val').textContent = v + '°'; }
+    applyHandTransform();
+  });
+});
+
+function applyHandTransform() {
+  const svg = document.getElementById('hand-svg');
+  const ca = document.getElementById('canvas-area');
+  const cw = ca.clientWidth, ch = ca.clientHeight;
+  const scale = handState.scale / 100;
+  const cx = cw / 2 - 356 * scale + handState.x;
+  const cy = ch / 2 - 451 * scale + handState.y;
+  svg.style.left = cx + 'px';
+  svg.style.top = cy + 'px';
+  svg.style.width = (713 * scale) + 'px';
+  svg.style.height = (902 * scale) + 'px';
+  svg.style.transform = `rotate(${handState.rotation}deg)`;
+}
+
+function applyBoneTransforms() {
+  BONES.forEach(b => {
+    const el = document.getElementById(b.id);
+    if (!el) return;
+    const r = boneRotations[b.id] || { rotation: 0, curl: 0 };
+    const totalRot = r.rotation + r.curl;
+    el.style.transformOrigin = `${b.pivot.x}px ${b.pivot.y}px`;
+    el.style.transform = `rotate(${totalRot}deg)`;
+  });
+}
+
+// Drag to move hand
+const svg = document.getElementById('hand-svg');
+let dragging = false, dragStart = null;
+svg.addEventListener('mousedown', (e) => {
+  if (e.target !== svg && e.target.id !== 'bg') return;
+  dragging = true;
+  dragStart = { x: e.clientX - handState.x, y: e.clientY - handState.y };
+});
+document.addEventListener('mousemove', (e) => {
+  if (!dragging) return;
+  handState.x = e.clientX - dragStart.x;
+  handState.y = e.clientY - dragStart.y;
+  document.getElementById('hand-x').value = Math.max(-300, Math.min(300, handState.x));
+  document.getElementById('x-val').textContent = Math.round(handState.x);
+  document.getElementById('hand-y').value = Math.max(-300, Math.min(300, handState.y));
+  document.getElementById('y-val').textContent = Math.round(handState.y);
+  applyHandTransform();
+});
+document.addEventListener('mouseup', () => { dragging = false; });
+
+// Timeline
+const rulerCanvas = document.getElementById('ruler');
+const tracksEl = document.getElementById('tracks');
+
+function buildTracks() {
+  tracksEl.innerHTML = '';
+  const total = TOTAL_FRAMES();
+
+  BONES.forEach(b => {
+    const row = document.createElement('div');
+    row.className = 'track-row';
+
+    const label = document.createElement('div');
+    label.className = 'track-label';
+    label.textContent = b.label;
+    row.appendChild(label);
+
+    const lane = document.createElement('div');
+    lane.className = 'track-lane';
+    lane.style.width = (total * PX_PER_FRAME) + 'px';
+    lane.dataset.bone = b.id;
+
+    lane.addEventListener('click', (e) => {
+      const rect = lane.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const f = Math.round(x / PX_PER_FRAME);
+      setFrame(Math.max(0, Math.min(total, f)));
+    });
+
+    row.appendChild(lane);
+    tracksEl.appendChild(row);
+  });
+
+  // hand track
+  const row = document.createElement('div');
+  row.className = 'track-row';
+  const label = document.createElement('div');
+  label.className = 'track-label';
+  label.textContent = 'Hand position';
+  row.appendChild(label);
+  const lane = document.createElement('div');
+  lane.className = 'track-lane';
+  lane.style.width = (total * PX_PER_FRAME) + 'px';
+  lane.dataset.bone = '__hand__';
+  lane.addEventListener('click', (e) => {
+    const rect = lane.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const f = Math.round(x / PX_PER_FRAME);
+    setFrame(Math.max(0, Math.min(total, f)));
+  });
+  row.appendChild(lane);
+  tracksEl.appendChild(row);
+
+  drawRuler();
+  renderKeyframes();
+  updatePlayhead();
+}
+
+function drawRuler() {
+  const total = TOTAL_FRAMES();
+  const w = total * PX_PER_FRAME + LABEL_W;
+  rulerCanvas.width = w;
+  const ctx = rulerCanvas.getContext('2d');
+  ctx.clearRect(0, 0, w, 22);
+  ctx.fillStyle = '#1e1b18';
+  ctx.fillRect(0, 0, w, 22);
+  ctx.fillStyle = '#3a342c';
+  ctx.fillRect(LABEL_W, 0, w - LABEL_W, 22);
+
+  for (let f = 0; f <= total; f++) {
+    const x = LABEL_W + f * PX_PER_FRAME;
+    const isMajor = f % 6 === 0;
+    ctx.strokeStyle = isMajor ? '#5a5040' : '#3a342c';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, isMajor ? 8 : 14);
+    ctx.lineTo(x, 22);
+    ctx.stroke();
+    if (isMajor && f > 0) {
+      ctx.fillStyle = '#7a6f62';
+      ctx.font = '9px Courier New';
+      ctx.fillText(f, x + 2, 10);
+    }
+  }
+}
+
+function renderKeyframes() {
+  document.querySelectorAll('.keyframe-diamond').forEach(el => el.remove());
+  const total = TOTAL_FRAMES();
+
+  keyframes.forEach((kf, kfi) => {
+    BONES.forEach(b => {
+      if (kf.bones[b.id]) {
+        const lane = tracksEl.querySelector(`[data-bone="${b.id}"]`);
+        if (!lane) return;
+        const diamond = createDiamond(kf.frame, kfi, b.id, lane, total);
+        lane.appendChild(diamond);
+      }
+    });
+
+    if (kf.hand) {
+      const lane = tracksEl.querySelector('[data-bone="__hand__"]');
+      if (lane) {
+        const diamond = createDiamond(kf.frame, kfi, '__hand__', lane, total);
+        lane.appendChild(diamond);
+      }
+    }
+  });
+}
+
+function createDiamond(frame, kfi, boneId, lane, total) {
+  const d = document.createElement('div');
+  d.className = 'keyframe-diamond';
+  d.style.left = (frame * PX_PER_FRAME + LABEL_W) + 'px';
+  d.title = `Frame ${frame}`;
+
+  d.addEventListener('click', (e) => {
+    e.stopPropagation();
+    selectedKF = { kfi, boneId };
+    document.querySelectorAll('.keyframe-diamond').forEach(el => el.classList.remove('active'));
+    d.classList.add('active');
+    setFrame(frame);
+  });
+
+  let draggingKF = false, kfDragStart = null;
+  d.addEventListener('mousedown', (e) => {
+    e.stopPropagation();
+    draggingKF = true;
+    kfDragStart = e.clientX;
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!draggingKF) return;
+    const dx = e.clientX - kfDragStart;
+    const df = Math.round(dx / PX_PER_FRAME);
+    const newFrame = Math.max(0, Math.min(total, keyframes[kfi].frame + df));
+    if (newFrame !== keyframes[kfi].frame) {
+      keyframes[kfi].frame = newFrame;
+      kfDragStart = e.clientX;
+      renderKeyframes();
+      updatePlayhead();
+    }
+  });
+  document.addEventListener('mouseup', () => { draggingKF = false; });
+
+  return d;
+}
+
+function updatePlayhead() {
+  let ph = document.getElementById('playhead');
+  if (!ph) {
+    ph = document.createElement('div');
+    ph.id = 'playhead';
+    document.getElementById('tl-body').style.position = 'relative';
+    document.getElementById('tl-body').appendChild(ph);
+  }
+  ph.style.left = (currentFrame * PX_PER_FRAME + LABEL_W) + 'px';
+  ph.style.height = '100%';
+  document.getElementById('frame-display').textContent = `F: ${currentFrame}`;
+}
+
+function setFrame(f) {
+  currentFrame = f;
+  updatePlayhead();
+  interpolateToFrame(f);
+}
+
+function interpolateToFrame(f) {
+  if (keyframes.length === 0) return;
+
+  const sorted = [...keyframes].sort((a, b) => a.frame - b.frame);
+  const prev = sorted.filter(k => k.frame <= f).pop();
+  const next = sorted.filter(k => k.frame > f)[0];
+
+  if (!prev) {
+    applyKeyframe(sorted[0]);
+    return;
+  }
+  if (!next) {
+    applyKeyframe(prev);
+    return;
+  }
+
+  const t = (f - prev.frame) / (next.frame - prev.frame);
+  const et = easeValue(t, next.easing || 'ease');
+
+  BONES.forEach(b => {
+    const pa = (prev.bones || {})[b.id] || { rotation: 0, curl: 0 };
+    const na = (next.bones || {})[b.id] || { rotation: 0, curl: 0 };
+    boneRotations[b.id] = {
+      rotation: lerp(pa.rotation, na.rotation, et),
+      curl: lerp(pa.curl, na.curl, et)
+    };
+  });
+
+  if (prev.hand && next.hand) {
+    handState.x = lerp(prev.hand.x, next.hand.x, et);
+    handState.y = lerp(prev.hand.y, next.hand.y, et);
+    handState.scale = lerp(prev.hand.scale, next.hand.scale, et);
+    handState.rotation = lerp(prev.hand.rotation, next.hand.rotation, et);
+  }
+
+  applyBoneTransforms();
+  applyHandTransform();
+  syncSliders();
+}
+
+function applyKeyframe(kf) {
+  if (kf.bones) {
+    BONES.forEach(b => {
+      if (kf.bones[b.id]) boneRotations[b.id] = { ...kf.bones[b.id] };
+    });
+  }
+  if (kf.hand) handState = { ...kf.hand };
+  applyBoneTransforms();
+  applyHandTransform();
+  syncSliders();
+}
+
+function syncSliders() {
+  if (selectedBone && boneRotations[selectedBone]) {
+    const r = boneRotations[selectedBone];
+    document.getElementById('rot-slider').value = r.rotation;
+    document.getElementById('rot-val').textContent = Math.round(r.rotation) + '°';
+    document.getElementById('curl-slider').value = r.curl;
+    document.getElementById('curl-val').textContent = Math.round(r.curl) + '°';
+  }
+  document.getElementById('hand-x').value = Math.max(-300, Math.min(300, handState.x));
+  document.getElementById('x-val').textContent = Math.round(handState.x);
+  document.getElementById('hand-y').value = Math.max(-300, Math.min(300, handState.y));
+  document.getElementById('y-val').textContent = Math.round(handState.y);
+  document.getElementById('hand-scale').value = handState.scale;
+  document.getElementById('scale-val').textContent = Math.round(handState.scale) + '%';
+  document.getElementById('hand-rot').value = handState.rotation;
+  document.getElementById('hrot-val').textContent = Math.round(handState.rotation) + '°';
+}
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function easeValue(t, type) {
+  switch(type) {
+    case 'linear': return t;
+    case 'ease-in': return t * t;
+    case 'ease-out': return t * (2 - t);
+    case 'hold': return 0;
+    case 'ease':
+    default:
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  }
+}
+
+// Add keyframe
+document.getElementById('btn-add-kf').addEventListener('click', () => {
+  const existingIdx = keyframes.findIndex(k => k.frame === currentFrame);
+  const bonesSnap = {};
+  BONES.forEach(b => { bonesSnap[b.id] = { ...boneRotations[b.id] }; });
+
+  const kf = {
+    frame: currentFrame,
+    bones: bonesSnap,
+    hand: { ...handState },
+    easing: document.getElementById('easing-select').value
+  };
+
+  if (existingIdx >= 0) {
+    keyframes[existingIdx] = kf;
+  } else {
+    keyframes.push(kf);
+  }
+
+  renderKeyframes();
+});
+
+// Delete keyframe
+document.getElementById('btn-del-kf').addEventListener('click', () => {
+  keyframes = keyframes.filter(k => k.frame !== currentFrame);
+  renderKeyframes();
+});
+
+// Reset pose
+document.getElementById('btn-reset-pose').addEventListener('click', () => {
+  BONES.forEach(b => { boneRotations[b.id] = { rotation: 0, curl: 0 }; });
+  applyBoneTransforms();
+  if (selectedBone) {
+    document.getElementById('rot-slider').value = 0;
+    document.getElementById('rot-val').textContent = '0°';
+    document.getElementById('curl-slider').value = 0;
+    document.getElementById('curl-val').textContent = '0°';
+  }
+});
+
+// Play / stop
+document.getElementById('btn-play').addEventListener('click', () => {
+  if (isPlaying) return;
+  isPlaying = true;
+  const total = TOTAL_FRAMES();
+  const fps = FPS();
+  const interval = 1000 / fps;
+  playInterval = setInterval(() => {
+    currentFrame++;
+    if (currentFrame > total) currentFrame = 0;
+    setFrame(currentFrame);
+  }, interval);
+});
+
+document.getElementById('btn-stop').addEventListener('click', () => {
+  isPlaying = false;
+  if (playInterval) clearInterval(playInterval);
+});
+
+// Prev/next keyframe
+document.getElementById('btn-prev-kf').addEventListener('click', () => {
+  const sorted = [...keyframes].sort((a, b) => a.frame - b.frame);
+  const prev = sorted.filter(k => k.frame < currentFrame).pop();
+  if (prev) setFrame(prev.frame);
+});
+document.getElementById('btn-next-kf').addEventListener('click', () => {
+  const sorted = [...keyframes].sort((a, b) => a.frame - b.frame);
+  const next = sorted.filter(k => k.frame > currentFrame)[0];
+  if (next) setFrame(next.frame);
+});
+
+// Duration / fps change
+document.getElementById('dur-select').addEventListener('change', buildTracks);
+document.getElementById('fps-select').addEventListener('change', buildTracks);
+
+// Ruler click to scrub
+rulerCanvas.addEventListener('click', (e) => {
+  const rect = rulerCanvas.getBoundingClientRect();
+  const x = e.clientX - rect.left - LABEL_W;
+  const f = Math.max(0, Math.min(TOTAL_FRAMES(), Math.round(x / PX_PER_FRAME)));
+  setFrame(f);
+});
+
+// Export frames
+document.getElementById('btn-export-frames').addEventListener('click', async () => {
+  if (keyframes.length < 2) { alert('Add at least 2 keyframes to export.'); return; }
+
+  const overlay = document.getElementById('export-overlay');
+  overlay.classList.add('show');
+
+  const total = TOTAL_FRAMES();
+  const fps = FPS();
+
+  try {
+    const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
+    const zip = new JSZip();
+    const folder = zip.folder('frames');
+
+    const svgEl = document.getElementById('hand-svg');
+    const origTransform = svgEl.style.transform;
+    const origLeft = svgEl.style.left;
+    const origTop = svgEl.style.top;
+    const origW = svgEl.style.width;
+    const origH = svgEl.style.height;
+
+    for (let f = 0; f <= total; f++) {
+      document.getElementById('export-status').textContent = `Exporting frame ${f} / ${total}`;
+      document.getElementById('export-progress').textContent = Math.round(f / total * 100) + '%';
+
+      setFrame(f);
+      await new Promise(r => setTimeout(r, 16));
+
+      const svgData = new XMLSerializer().serializeToString(svgEl);
+      const blob = new Blob([svgData], { type: 'image/svg+xml' });
+      const buf = await blob.arrayBuffer();
+      folder.file(`frame_${String(f).padStart(4, '0')}.svg`, buf);
+    }
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(content);
+    a.download = 'hand_animation_frames.zip';
+    a.click();
+  } catch(e) {
+    alert('Export failed: ' + e.message);
+  }
+
+  overlay.classList.remove('show');
+});
+
+// Export video via MediaRecorder
+document.getElementById('btn-export-video').addEventListener('click', async () => {
+  if (keyframes.length < 2) { alert('Add at least 2 keyframes to export.'); return; }
+
+  const overlay = document.getElementById('export-overlay');
+  overlay.classList.add('show');
+  document.getElementById('export-status').textContent = 'Recording video...';
+  document.getElementById('export-progress').textContent = '';
+
+  const total = TOTAL_FRAMES();
+  const fps = FPS();
+
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = 713;
+  offCanvas.height = 902;
+  const ctx = offCanvas.getContext('2d');
+
+  const chunks = [];
+  const stream = offCanvas.captureStream(fps);
+  const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  recorder.start();
+
+  setFrame(0);
+
+  for (let f = 0; f <= total; f++) {
+    document.getElementById('export-progress').textContent = Math.round(f / total * 100) + '%';
+    setFrame(f);
+    await new Promise(r => setTimeout(r, 1));
+
+    const svgEl = document.getElementById('hand-svg');
+    const svgData = new XMLSerializer().serializeToString(svgEl);
+    const img = new Image();
+    const blob = new Blob([svgData], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+
+    await new Promise(res => {
+      img.onload = () => {
+        ctx.clearRect(0, 0, 713, 902);
+        ctx.drawImage(img, 0, 0, 713, 902);
+        URL.revokeObjectURL(url);
+        res();
+      };
+      img.src = url;
+    });
+
+    await new Promise(r => setTimeout(r, 1000 / fps));
+  }
+
+  recorder.stop();
+  await new Promise(r => recorder.onstop = r);
+
+  const videoBlob = new Blob(chunks, { type: 'video/webm' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(videoBlob);
+  a.download = 'hand_animation.webm';
+  a.click();
+
+  overlay.classList.remove('show');
+});
+
+// Init
+window.addEventListener('load', () => {
+  applyHandTransform();
+  buildTracks();
+
+  // Add a default keyframe at frame 0
+  const bonesSnap = {};
+  BONES.forEach(b => { bonesSnap[b.id] = { rotation: 0, curl: 0 }; });
+  keyframes.push({ frame: 0, bones: bonesSnap, hand: { ...handState }, easing: 'ease' });
+  renderKeyframes();
+});
+
+window.addEventListener('resize', () => {
+  applyHandTransform();
+  drawRuler();
+});
+</script>
+</body>
+</html>

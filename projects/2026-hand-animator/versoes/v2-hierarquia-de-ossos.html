@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hand Animator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #181512;
+  --panel: #1e1b17;
+  --border: #33302a;
+  --accent: #ECE815;
+  --orange: #DD6729;
+  --text: #ddd5c8;
+  --muted: #6b6258;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── TOP BAR ── */
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.logo { color: var(--accent); font-size: 13px; letter-spacing: .1em; margin-right: 6px; }
+.sep { width: 1px; height: 18px; background: var(--border); }
+.btn {
+  background: #2a2620;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 11px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: .04em;
+  transition: background .1s;
+}
+.btn:hover { background: #3a342c; }
+.btn.acc { background: var(--accent); color: #181512; border-color: var(--accent); font-weight: 700; }
+.btn.acc:hover { background: #d4d010; }
+#frame-info { color: var(--accent); font-size: 12px; min-width: 60px; }
+
+/* ── LAYOUT ── */
+#body { display: flex; flex: 1; overflow: hidden; }
+
+/* ── CANVAS ── */
+#viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #0f0e0c;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: center center;
+}
+
+/* The hand container – we move THIS for position, rotate for wrist */
+#hand-root {
+  position: absolute;
+  width: 0; height: 0; /* anchor point only */
+  transform-origin: 0 0;
+}
+
+/* Each bone group: positioned so its top joint is at 0,0 of parent */
+.bone-group {
+  position: absolute;
+  transform-origin: 0 0; /* pivot at top of bone = joint it connects to parent */
+}
+
+#hand-root svg {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* ── RIGHT PANEL ── */
+#controls {
+  width: 260px;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+.section {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 14px;
+}
+.section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 6px;
+}
+.ctrl-label {
+  font-size: 10px;
+  color: var(--muted);
+  width: 80px;
+  flex-shrink: 0;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  flex: 1;
+  height: 3px;
+  background: var(--border);
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+.val {
+  color: var(--accent);
+  font-size: 11px;
+  min-width: 30px;
+  text-align: right;
+}
+.finger-block {
+  margin-bottom: 12px;
+}
+.finger-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text);
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #2a2620;
+}
+
+/* ── TIMELINE ── */
+#timeline {
+  height: 180px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+#tl-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#tl-scroll {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  position: relative;
+}
+#tl-canvas {
+  display: block;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="logo">HAND ANIMATOR</span>
+  <div class="sep"></div>
+  <button class="btn acc" id="btn-kf">+ Keyframe</button>
+  <button class="btn" id="btn-play">▶ Play</button>
+  <button class="btn" id="btn-stop">■ Stop</button>
+  <button class="btn" id="btn-del">Del KF</button>
+  <div class="sep"></div>
+  <span id="frame-info">F: 0 / 90</span>
+  <div style="flex:1"></div>
+  <button class="btn" id="btn-export-svg">Export Frames</button>
+  <button class="btn" id="btn-export-vid">Export Video</button>
+</div>
+
+<div id="body">
+  <div id="viewport">
+    <!--
+      Hierarchy rendered in pure SVG with <g> transforms.
+      We use a single SVG that redraws via JS on every change.
+    -->
+    <svg id="scene" style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible">
+      <g id="hand-root-g">
+        <!-- hand content rendered here by JS -->
+      </g>
+    </svg>
+    <div id="hint" style="position:absolute;bottom:10px;left:10px;color:var(--muted);font-size:10px;line-height:1.8;pointer-events:none">
+      Drag hand · Use sliders to pose · + Keyframe to record
+    </div>
+    <div id="export-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,.85);align-items:center;justify-content:center;flex-direction:column;gap:10px;font-size:13px;">
+      <div id="exp-msg">Exporting...</div>
+      <div id="exp-pct" style="color:var(--accent)"></div>
+    </div>
+  </div>
+
+  <div id="controls">
+    <!-- Position & Wrist -->
+    <div class="section">
+      <div class="section-title">Hand in space</div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">X position</span>
+        <input type="range" id="h-x" min="-400" max="400" value="0">
+        <span class="val" id="v-hx">0</span>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">Y position</span>
+        <input type="range" id="h-y" min="-400" max="400" value="0">
+        <span class="val" id="v-hy">0</span>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">Scale</span>
+        <input type="range" id="h-s" min="15" max="100" value="40">
+        <span class="val" id="v-hs">40%</span>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">Wrist rotate</span>
+        <input type="range" id="h-r" min="-180" max="180" value="0">
+        <span class="val" id="v-hr">0°</span>
+      </div>
+    </div>
+
+    <!-- Fingers -->
+    <div class="section" style="flex:1">
+      <div class="section-title">Finger tension</div>
+
+      <div class="finger-block" id="fb-thumb">
+        <div class="finger-title">Thumb</div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">All joints</span>
+          <input type="range" class="finger-all" data-finger="thumb" min="0" max="80" value="0">
+          <span class="val fv-all" data-finger="thumb">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Base</span>
+          <input type="range" class="joint-ctrl" data-bone="thumb-base" min="-30" max="60" value="0">
+          <span class="val jv" data-bone="thumb-base">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Mid</span>
+          <input type="range" class="joint-ctrl" data-bone="thumb-mid" min="0" max="80" value="0">
+          <span class="val jv" data-bone="thumb-mid">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Tip</span>
+          <input type="range" class="joint-ctrl" data-bone="thumb-tip" min="0" max="80" value="0">
+          <span class="val jv" data-bone="thumb-tip">0°</span>
+        </div>
+      </div>
+
+      <div class="finger-block" id="fb-index">
+        <div class="finger-title">Index</div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">All joints</span>
+          <input type="range" class="finger-all" data-finger="index" min="0" max="80" value="0">
+          <span class="val fv-all" data-finger="index">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Base</span>
+          <input type="range" class="joint-ctrl" data-bone="index-base" min="0" max="80" value="0">
+          <span class="val jv" data-bone="index-base">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Mid</span>
+          <input type="range" class="joint-ctrl" data-bone="index-mid" min="0" max="80" value="0">
+          <span class="val jv" data-bone="index-mid">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Tip</span>
+          <input type="range" class="joint-ctrl" data-bone="index-tip" min="0" max="80" value="0">
+          <span class="val jv" data-bone="index-tip">0°</span>
+        </div>
+      </div>
+
+      <div class="finger-block" id="fb-middle">
+        <div class="finger-title">Middle</div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">All joints</span>
+          <input type="range" class="finger-all" data-finger="middle" min="0" max="80" value="0">
+          <span class="val fv-all" data-finger="middle">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Base</span>
+          <input type="range" class="joint-ctrl" data-bone="middle-base" min="0" max="80" value="0">
+          <span class="val jv" data-bone="middle-base">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Mid</span>
+          <input type="range" class="joint-ctrl" data-bone="middle-mid" min="0" max="80" value="0">
+          <span class="val jv" data-bone="middle-mid">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Tip</span>
+          <input type="range" class="joint-ctrl" data-bone="middle-tip" min="0" max="80" value="0">
+          <span class="val jv" data-bone="middle-tip">0°</span>
+        </div>
+      </div>
+
+      <div class="finger-block" id="fb-ring">
+        <div class="finger-title">Ring</div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">All joints</span>
+          <input type="range" class="finger-all" data-finger="ring" min="0" max="80" value="0">
+          <span class="val fv-all" data-finger="ring">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Base</span>
+          <input type="range" class="joint-ctrl" data-bone="ring-base" min="0" max="80" value="0">
+          <span class="val jv" data-bone="ring-base">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Mid</span>
+          <input type="range" class="joint-ctrl" data-bone="ring-mid" min="0" max="80" value="0">
+          <span class="val jv" data-bone="ring-mid">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Tip</span>
+          <input type="range" class="joint-ctrl" data-bone="ring-tip" min="0" max="80" value="0">
+          <span class="val jv" data-bone="ring-tip">0°</span>
+        </div>
+      </div>
+
+      <div class="finger-block" id="fb-pinky">
+        <div class="finger-title">Pinky</div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">All joints</span>
+          <input type="range" class="finger-all" data-finger="pinky" min="0" max="80" value="0">
+          <span class="val fv-all" data-finger="pinky">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Base</span>
+          <input type="range" class="joint-ctrl" data-bone="pinky-base" min="0" max="80" value="0">
+          <span class="val jv" data-bone="pinky-base">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Mid</span>
+          <input type="range" class="joint-ctrl" data-bone="pinky-mid" min="0" max="80" value="0">
+          <span class="val jv" data-bone="pinky-mid">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Tip</span>
+          <input type="range" class="joint-ctrl" data-bone="pinky-tip" min="0" max="80" value="0">
+          <span class="val jv" data-bone="pinky-tip">0°</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="timeline">
+  <div id="tl-bar">
+    <button class="btn" id="tl-prev">|◀</button>
+    <button class="btn" id="tl-next">▶|</button>
+    <select id="dur-sel" style="background:#2a2620;border:1px solid var(--border);color:var(--text);padding:3px 6px;font-family:inherit;font-size:11px">
+      <option value="60">2s @30fps</option>
+      <option value="90" selected>3s @30fps</option>
+      <option value="120">4s @30fps</option>
+      <option value="180">6s @30fps</option>
+    </select>
+    <select id="ease-sel" style="background:#2a2620;border:1px solid var(--border);color:var(--text);padding:3px 6px;font-family:inherit;font-size:11px">
+      <option value="ease" selected>Ease</option>
+      <option value="linear">Linear</option>
+      <option value="ease-in">Ease In</option>
+      <option value="ease-out">Ease Out</option>
+      <option value="hold">Hold</option>
+    </select>
+  </div>
+  <canvas id="tl-canvas"></canvas>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// BONE DEFINITIONS
+// Each bone has:
+//   pathData  : the SVG path d= string (in original 713×902 coords)
+//   jointTop  : point in ORIGINAL coords where this bone connects to its PARENT
+//               (= the pivot; parent rotates around its own jointTop)
+//   children  : bone ids
+// ─────────────────────────────────────────
+
+const SVG_W = 713, SVG_H = 902;
+
+// Joint positions extracted from path coordinates (top of each segment = where it meets parent)
+const BONES = {
+  // WRIST — anchored to palm bottom
+  wrist: {
+    path: "M296.93 609.29L461.07 612.55L478.85 767.81H283.06L296.93 609.29Z",
+    jointTop: { x: 379, y: 611 },   // top center of wrist shape
+    parent: null,
+    children: ['palm']
+  },
+  // PALM — the big trapezoid
+  palm: {
+    path: "M470.38 603.62L297.44 602.47L279.06 378.94H484.96L470.38 603.62Z",
+    jointTop: { x: 382, y: 603 },   // bottom of palm = connects to wrist
+    parent: 'wrist',
+    children: ['thumb-base','index-base','middle-base','ring-base','pinky-base']
+  },
+
+  // THUMB (angles differently — side of hand)
+  'thumb-base': {
+    path: "M291.12 603.62L283.42 497.75L267.59 468.56H215.01L291.12 603.62Z",
+    jointTop: { x: 253, y: 497 },   // where thumb attaches to palm
+    parent: 'palm',
+    children: ['thumb-mid']
+  },
+  'thumb-mid': {
+    path: "M262.59 384.01H219.01L215.01 464.26H267.59L262.59 384.01Z",
+    jointTop: { x: 241, y: 464 },   // top of mid segment (bottom joint)
+    parent: 'thumb-base',
+    children: ['thumb-tip']
+  },
+  'thumb-tip': {
+    path: "M246.29 309.74C238.84 309.74 222.62 315.84 221.9 323.83L219.52 379.71H263.09L260.71 324.2C260.16 316.05 253.87 309.74 246.29 309.74Z",
+    jointTop: { x: 241, y: 380 },   // bottom of tip
+    parent: 'thumb-mid',
+    children: []
+  },
+
+  // INDEX
+  'index-base': {
+    path: "M376.1 281.77H336.75L332.06 373.26H381.96L376.1 281.77Z",
+    jointTop: { x: 357, y: 373 },   // bottom = connects to palm
+    parent: 'palm',
+    children: ['index-mid']
+  },
+  'index-mid': {
+    path: "M376.1 183.85H336.75V273.68H376.1V183.85Z",
+    jointTop: { x: 357, y: 273 },
+    parent: 'index-base',
+    children: ['index-tip']
+  },
+  'index-tip': {
+    path: "M356.82 128.75C348.09 128.75 340.8 134.18 339.95 141.3L336.74 178.04H376.09L373.72 141.63C373.08 134.37 365.7 128.75 356.82 128.75Z",
+    jointTop: { x: 357, y: 178 },
+    parent: 'index-mid',
+    children: []
+  },
+
+  // MIDDLE
+  'middle-base': {
+    path: "M320.02 287.6H283.42L279.06 373.26H325.47L320.02 287.6Z",
+    jointTop: { x: 302, y: 373 },
+    parent: 'palm',
+    children: ['middle-mid']
+  },
+  'middle-mid': {
+    path: "M320.01 195.93H283.42V280.03H320.01V195.93Z",
+    jointTop: { x: 302, y: 280 },
+    parent: 'middle-base',
+    children: ['middle-tip']
+  },
+  'middle-tip': {
+    path: "M302.09 144.34C293.97 144.34 287.19 149.42 286.4 156.09L283.42 190.49H320.01L317.8 156.41C317.2 149.61 310.34 144.35 302.08 144.35L302.09 144.34Z",
+    jointTop: { x: 302, y: 190 },
+    parent: 'middle-mid',
+    children: []
+  },
+
+  // RING
+  'ring-base': {
+    path: "M428.96 288.87H395.39L391.39 373.26H433.96L428.96 288.87Z",
+    jointTop: { x: 412, y: 373 },
+    parent: 'palm',
+    children: ['ring-mid']
+  },
+  'ring-mid': {
+    path: "M428.96 198.55H395.39V281.41H428.96V198.55Z",
+    jointTop: { x: 412, y: 281 },
+    parent: 'ring-base',
+    children: ['ring-tip']
+  },
+  'ring-tip': {
+    path: "M412.51 147.72C405.06 147.72 398.84 152.73 398.12 159.29L395.38 193.18H428.95L426.92 159.6C426.37 152.9 420.08 147.72 412.5 147.72H412.51Z",
+    jointTop: { x: 412, y: 193 },
+    parent: 'ring-mid',
+    children: []
+  },
+
+  // PINKY
+  'pinky-base': {
+    path: "M476.35 304.76H445.11L441.39 373.16H481L476.35 304.76Z",
+    jointTop: { x: 461, y: 373 },
+    parent: 'palm',
+    children: ['pinky-mid']
+  },
+  'pinky-mid': {
+    path: "M476.35 231.57H445.11V298.72H476.35V231.57Z",
+    jointTop: { x: 461, y: 298 },
+    parent: 'pinky-base',
+    children: ['pinky-tip']
+  },
+  'pinky-tip': {
+    path: "M461.04 190.38C454.11 190.38 448.32 194.44 447.65 199.76L445.11 227.22H476.35L474.46 200.01C473.95 194.58 468.09 190.38 461.04 190.38Z",
+    jointTop: { x: 461, y: 227 },
+    parent: 'pinky-mid',
+    children: []
+  },
+};
+
+// ─────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────
+const state = {
+  hand: { x: 0, y: 0, scale: 40, wristRot: 0 },
+  bones: {}
+};
+Object.keys(BONES).forEach(id => { state.bones[id] = 0; }); // rotation in degrees
+
+let keyframes = []; // { frame, state: deepCopy }
+let currentFrame = 0;
+let totalFrames = 90;
+let isPlaying = false;
+let playTimer = null;
+
+// ─────────────────────────────────────────
+// RENDER
+// The key insight: each bone <g> is translated so its pivot (jointTop)
+// is at origin, rotated, then translated back — all in SVG coordinates.
+// Parent's cumulative transform automatically carries children.
+// ─────────────────────────────────────────
+function renderScene() {
+  const g = document.getElementById('hand-root-g');
+  const vp = document.getElementById('viewport');
+  const vw = vp.clientWidth, vh = vp.clientHeight;
+
+  const sc = state.hand.scale / 100;
+  // Center of viewport becomes anchor for the hand root
+  const cx = vw / 2 + state.hand.x;
+  const cy = vh / 2 + state.hand.y;
+
+  // Hand root: position in viewport + wrist rotation around palm center
+  // Palm center in SVG coords ≈ (382, 490)
+  const palmCX = 382 * sc, palmCY = 490 * sc;
+
+  g.setAttribute('transform',
+    `translate(${cx},${cy}) rotate(${state.hand.wristRot}) translate(${-palmCX},${-palmCY}) scale(${sc})`
+  );
+
+  // Build SVG content with proper hierarchy
+  g.innerHTML = buildBoneGroup('wrist');
+}
+
+function buildBoneGroup(id) {
+  const bone = BONES[id];
+  const rot = state.bones[id] || 0;
+  const j = bone.jointTop;
+
+  // Rotate around this bone's jointTop (the joint connecting it to parent)
+  const transform = `rotate(${rot},${j.x},${j.y})`;
+
+  const childrenSVG = bone.children.map(c => buildBoneGroup(c)).join('');
+
+  // Draw the path + children inside the rotation group
+  return `<g transform="${transform}">
+    <path d="${bone.path}" fill="#ECE815" />
+    ${childrenSVG}
+  </g>`;
+}
+
+// Always draw palm + wrist first (background), then fingers on top
+// Actually since wrist is parent of palm which is parent of fingers, ordering matters
+// Let's reorder: wrist → palm → fingers drawn last (on top)
+// The buildBoneGroup recursion handles this naturally since children come after parent path
+
+// ─────────────────────────────────────────
+// DRAG HAND POSITION
+// ─────────────────────────────────────────
+const vp = document.getElementById('viewport');
+let dragging = false, dragStart = null, dragOrigin = null;
+
+vp.addEventListener('mousedown', e => {
+  dragging = true;
+  dragStart = { x: e.clientX, y: e.clientY };
+  dragOrigin = { x: state.hand.x, y: state.hand.y };
+  vp.style.cursor = 'grabbing';
+});
+document.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  state.hand.x = dragOrigin.x + (e.clientX - dragStart.x);
+  state.hand.y = dragOrigin.y + (e.clientY - dragStart.y);
+  // update sliders
+  document.getElementById('h-x').value = Math.max(-400, Math.min(400, state.hand.x));
+  document.getElementById('v-hx').textContent = Math.round(state.hand.x);
+  document.getElementById('h-y').value = Math.max(-400, Math.min(400, state.hand.y));
+  document.getElementById('v-hy').textContent = Math.round(state.hand.y);
+  renderScene();
+});
+document.addEventListener('mouseup', () => {
+  dragging = false;
+  vp.style.cursor = '';
+});
+
+// ─────────────────────────────────────────
+// HAND CONTROLS
+// ─────────────────────────────────────────
+function bindHandSlider(id, field, valId, unit) {
+  const el = document.getElementById(id);
+  const vEl = document.getElementById(valId);
+  el.addEventListener('input', () => {
+    const v = parseFloat(el.value);
+    state.hand[field] = v;
+    vEl.textContent = Math.round(v) + unit;
+    renderScene();
+  });
+}
+bindHandSlider('h-x', 'x', 'v-hx', '');
+bindHandSlider('h-y', 'y', 'v-hy', '');
+bindHandSlider('h-s', 'scale', 'v-hs', '%');
+bindHandSlider('h-r', 'wristRot', 'v-hr', '°');
+
+// ─────────────────────────────────────────
+// BONE JOINT CONTROLS
+// ─────────────────────────────────────────
+document.querySelectorAll('.joint-ctrl').forEach(el => {
+  const bone = el.dataset.bone;
+  const valEl = document.querySelector(`.jv[data-bone="${bone}"]`);
+  el.addEventListener('input', () => {
+    state.bones[bone] = parseFloat(el.value);
+    if (valEl) valEl.textContent = Math.round(el.value) + '°';
+    renderScene();
+  });
+});
+
+// Finger "all joints" slider
+const FINGER_BONES = {
+  thumb:  ['thumb-base','thumb-mid','thumb-tip'],
+  index:  ['index-base','index-mid','index-tip'],
+  middle: ['middle-base','middle-mid','middle-tip'],
+  ring:   ['ring-base','ring-mid','ring-tip'],
+  pinky:  ['pinky-base','pinky-mid','pinky-tip'],
+};
+
+document.querySelectorAll('.finger-all').forEach(el => {
+  const finger = el.dataset.finger;
+  const valEl = document.querySelector(`.fv-all[data-finger="${finger}"]`);
+  el.addEventListener('input', () => {
+    const v = parseFloat(el.value);
+    if (valEl) valEl.textContent = Math.round(v) + '°';
+    FINGER_BONES[finger].forEach(bone => {
+      state.bones[bone] = v;
+      // sync individual sliders
+      const s = document.querySelector(`.joint-ctrl[data-bone="${bone}"]`);
+      const sv = document.querySelector(`.jv[data-bone="${bone}"]`);
+      if (s) s.value = v;
+      if (sv) sv.textContent = Math.round(v) + '°';
+    });
+    renderScene();
+  });
+});
+
+// ─────────────────────────────────────────
+// TIMELINE
+// ─────────────────────────────────────────
+const TL_LABEL_W = 0;
+const TL_PX = 6; // pixels per frame
+const TL_ROW_H = 16;
+const TRACKS = ['hand','thumb','index','middle','ring','pinky'];
+const TRACK_LABELS = ['position/wrist','thumb','index','middle','ring','pinky'];
+
+const canvas = document.getElementById('tl-canvas');
+const ctx2 = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const tl = document.getElementById('timeline');
+  const bar = document.getElementById('tl-bar');
+  canvas.width = Math.max(totalFrames * TL_PX + 200, window.innerWidth);
+  canvas.height = tl.clientHeight - bar.clientHeight - 2;
+  drawTimeline();
+}
+
+function drawTimeline() {
+  const w = canvas.width, h = canvas.height;
+  ctx2.clearRect(0, 0, w, h);
+  ctx2.fillStyle = '#181512';
+  ctx2.fillRect(0, 0, w, h);
+
+  const rowH = Math.floor(h / TRACKS.length);
+
+  // rows
+  TRACKS.forEach((t, i) => {
+    const y = i * rowH;
+    ctx2.fillStyle = i % 2 === 0 ? '#1e1b17' : '#1a1814';
+    ctx2.fillRect(0, y, w, rowH);
+
+    ctx2.fillStyle = '#6b6258';
+    ctx2.font = '10px Courier New';
+    ctx2.fillText(TRACK_LABELS[i], 6, y + rowH / 2 + 4);
+
+    // frame ticks
+    for (let f = 0; f <= totalFrames; f += 6) {
+      const x = 110 + f * TL_PX;
+      ctx2.strokeStyle = '#2a2620';
+      ctx2.lineWidth = 1;
+      ctx2.beginPath(); ctx2.moveTo(x, y); ctx2.lineTo(x, y + rowH); ctx2.stroke();
+      if (i === 0) {
+        ctx2.fillStyle = '#4a4238';
+        ctx2.fillText(f, x + 2, y + 10);
+      }
+    }
+  });
+
+  // keyframe diamonds
+  keyframes.forEach(kf => {
+    TRACKS.forEach((track, ti) => {
+      const hasData = track === 'hand'
+        ? kf.hand !== undefined
+        : FINGER_BONES[track] && FINGER_BONES[track].some(b => kf.bones[b] !== undefined);
+
+      if (!hasData && track !== 'hand') {
+        // always draw if keyframe exists
+      }
+
+      const x = 110 + kf.frame * TL_PX;
+      const y = ti * rowH + rowH / 2;
+      ctx2.save();
+      ctx2.translate(x, y);
+      ctx2.rotate(Math.PI / 4);
+      ctx2.fillStyle = kf.frame === currentFrame ? '#DD6729' : '#ECE815';
+      ctx2.fillRect(-4, -4, 8, 8);
+      ctx2.restore();
+    });
+  });
+
+  // playhead
+  const px = 110 + currentFrame * TL_PX;
+  ctx2.strokeStyle = '#DD6729';
+  ctx2.lineWidth = 1.5;
+  ctx2.beginPath(); ctx2.moveTo(px, 0); ctx2.lineTo(px, h); ctx2.stroke();
+
+  // playhead triangle
+  ctx2.fillStyle = '#DD6729';
+  ctx2.beginPath();
+  ctx2.moveTo(px - 5, 0);
+  ctx2.lineTo(px + 5, 0);
+  ctx2.lineTo(px, 8);
+  ctx2.fill();
+}
+
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left - 110;
+  const f = Math.max(0, Math.min(totalFrames, Math.round(x / TL_PX)));
+  setFrame(f);
+});
+
+// ─────────────────────────────────────────
+// KEYFRAMES & INTERPOLATION
+// ─────────────────────────────────────────
+function deepCopy(s) {
+  return JSON.parse(JSON.stringify(s));
+}
+
+function addKeyframe() {
+  const snap = {
+    frame: currentFrame,
+    hand: { ...state.hand },
+    bones: { ...state.bones },
+    easing: document.getElementById('ease-sel').value
+  };
+  const idx = keyframes.findIndex(k => k.frame === currentFrame);
+  if (idx >= 0) keyframes[idx] = snap;
+  else keyframes.push(snap);
+  keyframes.sort((a, b) => a.frame - b.frame);
+  drawTimeline();
+}
+
+function delKeyframe() {
+  keyframes = keyframes.filter(k => k.frame !== currentFrame);
+  drawTimeline();
+}
+
+function setFrame(f) {
+  currentFrame = Math.max(0, Math.min(totalFrames, f));
+  document.getElementById('frame-info').textContent = `F: ${currentFrame} / ${totalFrames}`;
+  if (keyframes.length >= 2) interpolate(currentFrame);
+  else if (keyframes.length === 1 && keyframes[0].frame === currentFrame) applyKF(keyframes[0]);
+  drawTimeline();
+}
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function applyEasing(t, type) {
+  switch (type) {
+    case 'linear': return t;
+    case 'ease-in': return t * t * t;
+    case 'ease-out': return 1 - Math.pow(1 - t, 3);
+    case 'hold': return 0;
+    default: // ease
+      return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+  }
+}
+
+function interpolate(f) {
+  if (keyframes.length === 0) return;
+  const sorted = keyframes;
+  const prev = sorted.filter(k => k.frame <= f).pop();
+  const next = sorted.find(k => k.frame > f);
+  if (!prev) { applyKF(sorted[0]); return; }
+  if (!next) { applyKF(prev); return; }
+
+  const t = applyEasing((f - prev.frame) / (next.frame - prev.frame), next.easing || 'ease');
+
+  state.hand.x = lerp(prev.hand.x, next.hand.x, t);
+  state.hand.y = lerp(prev.hand.y, next.hand.y, t);
+  state.hand.scale = lerp(prev.hand.scale, next.hand.scale, t);
+  state.hand.wristRot = lerp(prev.hand.wristRot, next.hand.wristRot, t);
+
+  Object.keys(BONES).forEach(id => {
+    state.bones[id] = lerp(prev.bones[id] || 0, next.bones[id] || 0, t);
+  });
+
+  renderScene();
+  syncAllSliders();
+}
+
+function applyKF(kf) {
+  state.hand = { ...kf.hand };
+  Object.keys(BONES).forEach(id => { state.bones[id] = kf.bones[id] || 0; });
+  renderScene();
+  syncAllSliders();
+}
+
+function syncAllSliders() {
+  document.getElementById('h-x').value = state.hand.x;
+  document.getElementById('v-hx').textContent = Math.round(state.hand.x);
+  document.getElementById('h-y').value = state.hand.y;
+  document.getElementById('v-hy').textContent = Math.round(state.hand.y);
+  document.getElementById('h-s').value = state.hand.scale;
+  document.getElementById('v-hs').textContent = Math.round(state.hand.scale) + '%';
+  document.getElementById('h-r').value = state.hand.wristRot;
+  document.getElementById('v-hr').textContent = Math.round(state.hand.wristRot) + '°';
+
+  Object.keys(BONES).forEach(id => {
+    const s = document.querySelector(`.joint-ctrl[data-bone="${id}"]`);
+    const v = document.querySelector(`.jv[data-bone="${id}"]`);
+    if (s) s.value = state.bones[id];
+    if (v) v.textContent = Math.round(state.bones[id]) + '°';
+  });
+}
+
+// ─────────────────────────────────────────
+// PLAYBACK
+// ─────────────────────────────────────────
+document.getElementById('btn-play').addEventListener('click', () => {
+  if (isPlaying) return;
+  isPlaying = true;
+  const fps = 30;
+  playTimer = setInterval(() => {
+    currentFrame++;
+    if (currentFrame > totalFrames) currentFrame = 0;
+    setFrame(currentFrame);
+  }, 1000 / fps);
+});
+document.getElementById('btn-stop').addEventListener('click', () => {
+  isPlaying = false;
+  clearInterval(playTimer);
+});
+document.getElementById('btn-kf').addEventListener('click', addKeyframe);
+document.getElementById('btn-del').addEventListener('click', delKeyframe);
+document.getElementById('tl-prev').addEventListener('click', () => {
+  const prev = [...keyframes].reverse().find(k => k.frame < currentFrame);
+  if (prev) setFrame(prev.frame);
+});
+document.getElementById('tl-next').addEventListener('click', () => {
+  const next = keyframes.find(k => k.frame > currentFrame);
+  if (next) setFrame(next.frame);
+});
+document.getElementById('dur-sel').addEventListener('change', function() {
+  totalFrames = parseInt(this.value);
+  document.getElementById('frame-info').textContent = `F: ${currentFrame} / ${totalFrames}`;
+  resizeCanvas();
+});
+
+// ─────────────────────────────────────────
+// EXPORT — render to offscreen canvas frame by frame
+// ─────────────────────────────────────────
+async function renderFrameToCanvas(offCtx, offW, offH) {
+  const svgEl = document.getElementById('scene');
+  const serialized = new XMLSerializer().serializeToString(svgEl);
+  const svgBlob = new Blob([serialized], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(svgBlob);
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      offCtx.clearRect(0, 0, offW, offH);
+      offCtx.fillStyle = '#0f0e0c';
+      offCtx.fillRect(0, 0, offW, offH);
+      offCtx.drawImage(img, 0, 0, offW, offH);
+      URL.revokeObjectURL(url);
+      res();
+    };
+    img.src = url;
+  });
+}
+
+document.getElementById('btn-export-vid').addEventListener('click', async () => {
+  if (keyframes.length < 2) { alert('Need at least 2 keyframes.'); return; }
+  const ov = document.getElementById('export-overlay');
+  ov.style.display = 'flex';
+
+  const vp = document.getElementById('viewport');
+  const W = vp.clientWidth, H = vp.clientHeight;
+  const off = document.createElement('canvas');
+  off.width = W; off.height = H;
+  const offCtx = off.getContext('2d');
+
+  const fps = 30;
+  const stream = off.captureStream(fps);
+  const rec = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+  const chunks = [];
+  rec.ondataavailable = e => chunks.push(e.data);
+  rec.start();
+
+  for (let f = 0; f <= totalFrames; f++) {
+    document.getElementById('exp-msg').textContent = `Recording frame ${f} / ${totalFrames}`;
+    document.getElementById('exp-pct').textContent = Math.round(f / totalFrames * 100) + '%';
+    setFrame(f);
+    await new Promise(r => setTimeout(r, 10));
+    await renderFrameToCanvas(offCtx, W, H);
+    await new Promise(r => setTimeout(r, 1000 / fps));
+  }
+
+  rec.stop();
+  await new Promise(r => rec.onstop = r);
+  const blob = new Blob(chunks, { type: 'video/webm' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'hand_animation.webm';
+  a.click();
+  ov.style.display = 'none';
+});
+
+document.getElementById('btn-export-svg').addEventListener('click', async () => {
+  if (keyframes.length < 2) { alert('Need at least 2 keyframes.'); return; }
+  const ov = document.getElementById('export-overlay');
+  ov.style.display = 'flex';
+
+  try {
+    const { default: JSZip } = await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
+    const zip = new JSZip();
+    const folder = zip.folder('frames');
+
+    for (let f = 0; f <= totalFrames; f++) {
+      document.getElementById('exp-msg').textContent = `Exporting frame ${f} / ${totalFrames}`;
+      document.getElementById('exp-pct').textContent = Math.round(f / totalFrames * 100) + '%';
+      setFrame(f);
+      await new Promise(r => setTimeout(r, 16));
+      const svgData = new XMLSerializer().serializeToString(document.getElementById('scene'));
+      folder.file(`frame_${String(f).padStart(4,'0')}.svg`, svgData);
+    }
+
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'hand_frames.zip';
+    a.click();
+  } catch(e) { alert('Export error: ' + e.message); }
+
+  ov.style.display = 'none';
+});
+
+// ─────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────
+window.addEventListener('load', () => {
+  renderScene();
+  resizeCanvas();
+  setFrame(0);
+});
+window.addEventListener('resize', () => {
+  renderScene();
+  resizeCanvas();
+});
+</script>
+</body>
+</html>

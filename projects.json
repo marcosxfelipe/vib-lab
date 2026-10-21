@@ -8,6 +8,14 @@
     "status": "funcionando"
   },
   {
+    "slug": "2026-hand-animator",
+    "title": "Hand Animator",
+    "date": "2026-04",
+    "description": "Rig para animar uma mão vetorial no navegador: joystick que mistura três poses, sliders por dedo, timeline e exportação.",
+    "tags": ["svg", "animation", "tool"],
+    "status": "funcionando"
+  },
+  {
     "slug": "2026-creative-katas",
     "title": "Creative Katas",
     "date": "2026-04",

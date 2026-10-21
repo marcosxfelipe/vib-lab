@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hand Animator — Gesture Control</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#111009;--panel:#1a1814;--panel2:#1f1c18;--border:#2e2920;
+  --accent:#ECE815;--orange:#DD6729;--green:#4ecb71;--red:#e05555;
+  --text:#d4cbc0;--muted:#615a50;--dim:#302c26;
+}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;font-size:12px;height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+
+/* ── TOPBAR ── */
+#topbar{display:flex;align-items:center;gap:7px;padding:5px 12px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.logo{color:var(--accent);font-size:12px;letter-spacing:.14em;flex-shrink:0}
+.sep{width:1px;height:16px;background:var(--border);flex-shrink:0}
+.btn{background:#221f18;border:1px solid var(--border);color:var(--text);padding:4px 10px;cursor:pointer;font-family:inherit;font-size:11px;transition:background .1s;white-space:nowrap}
+.btn:hover{background:#302c22}
+.btn.acc{background:var(--accent);color:#111009;border-color:var(--accent);font-weight:700}
+.btn.acc:hover{background:#d4d010}
+.btn.live{background:#1a2e14;border-color:#3a6028;color:var(--green)}
+.btn.live.on{background:#1e3a16;border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset}
+.btn.danger{background:#2a1010;border-color:#5a2020;color:#e08080}
+select,input[type=number]{background:#221f18;border:1px solid var(--border);color:var(--text);padding:3px 6px;font-family:inherit;font-size:11px;outline:none}
+#frame-info{color:var(--accent);font-size:11px;min-width:80px}
+
+/* ── BODY ── */
+#body{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* ── VIEWPORT ── */
+#viewport{flex:1;position:relative;overflow:hidden;background:#0a0908;cursor:crosshair}
+#scene{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible}
+
+/* Gesture cursor overlay */
+#gesture-cursor{position:absolute;pointer-events:none;z-index:20;transition:transform .05s linear}
+#gc-ring{width:28px;height:28px;border-radius:50%;border:2px solid var(--accent);position:absolute;transform:translate(-50%,-50%);transition:all .12s}
+#gc-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);position:absolute;transform:translate(-50%,-50%);transition:background .1s}
+#gc-label{position:absolute;top:18px;left:12px;font-size:10px;color:var(--accent);white-space:nowrap;letter-spacing:.06em;text-shadow:0 1px 3px #000}
+
+/* Webcam pip */
+#cam-pip{position:absolute;bottom:12px;right:12px;width:200px;height:150px;z-index:30;border:1px solid var(--border);background:#000;border-radius:4px;overflow:hidden;display:none}
+#cam-pip.show{display:block}
+#cam-video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);opacity:.85}
+#cam-canvas{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1)}
+#cam-label{position:absolute;top:4px;left:6px;font-size:9px;color:var(--green);letter-spacing:.1em;text-transform:uppercase}
+#gesture-badge{position:absolute;bottom:4px;left:6px;font-size:10px;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+
+/* Mode indicator */
+#mode-badge{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(17,16,9,.85);border:1px solid var(--border);padding:4px 14px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;pointer-events:none;z-index:25;transition:all .2s}
+#mode-badge .micon{color:var(--accent);margin-right:6px}
+
+/* Pinch indicator */
+#pinch-ring{position:absolute;pointer-events:none;z-index:22;display:none}
+#pinch-ring circle{transition:r .08s, stroke-opacity .08s}
+
+/* ── LEFT: GESTURE MAP PANEL ── */
+#gesture-panel{width:200px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.gp-title{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);padding:10px 12px 6px;border-bottom:1px solid var(--border)}
+.gesture-row{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-bottom:1px solid var(--dim);transition:background .1s}
+.gesture-row.active{background:#1e2214;border-left:2px solid var(--green)}
+.g-icon{font-size:18px;flex-shrink:0;width:26px;text-align:center;margin-top:1px;line-height:1}
+.g-info{flex:1;min-width:0}
+.g-name{font-size:10px;color:var(--text);letter-spacing:.05em;margin-bottom:2px}
+.g-action{font-size:9px;color:var(--muted);line-height:1.5}
+.g-status{width:7px;height:7px;border-radius:50%;background:var(--dim);flex-shrink:0;margin-top:4px;transition:background .15s, box-shadow .15s}
+.gesture-row.active .g-status{background:var(--green);box-shadow:0 0 6px var(--green)}
+
+.landmark-viz{padding:10px 12px;border-bottom:1px solid var(--border)}
+#lm-canvas{display:block;width:100%;background:#0d0c0a;border:1px solid var(--dim)}
+
+.threshold-row{padding:8px 12px;border-bottom:1px solid var(--dim)}
+.th-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+input[type=range]{-webkit-appearance:none;width:100%;height:2px;background:var(--border);outline:none;cursor:pointer;display:block}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--accent);cursor:pointer}
+
+/* ── RIGHT CONTROLS ── */
+#controls{width:220px;background:var(--panel);border-left:1px solid var(--border);overflow-y:auto;flex-shrink:0}
+.section{border-bottom:1px solid var(--border);padding:9px 11px}
+.section-title{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px}
+.ctrl-row{display:flex;align-items:center;margin-bottom:5px;gap:4px}
+.ctrl-label{font-size:10px;color:var(--muted);width:62px;flex-shrink:0}
+.val{color:var(--accent);font-size:10px;min-width:26px;text-align:right;flex-shrink:0}
+input[type=range].bidir::-webkit-slider-thumb{background:var(--orange)}
+
+.fb{margin-bottom:8px}
+.fn{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--text);margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid var(--dim)}
+
+/* ── TIMELINE ── */
+#timeline{height:155px;background:var(--panel);border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column}
+#tl-bar{display:flex;align-items:center;gap:6px;padding:4px 10px;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+#tl-scroll{flex:1;overflow:auto}
+#tl-canvas{display:block;cursor:pointer}
+
+/* fps presets */
+.fp{background:#221f18;border:1px solid var(--border);color:var(--muted);padding:2px 6px;cursor:pointer;font-family:inherit;font-size:10px;transition:all .1s}
+.fp:hover{color:var(--text);border-color:var(--muted)}
+.fp.on{background:var(--accent);color:#111009;border-color:var(--accent);font-weight:700}
+#fps-in{width:34px;text-align:center}
+
+/* export overlay */
+#exp-ov{display:none;position:absolute;inset:0;background:rgba(0,0,0,.88);flex-direction:column;align-items:center;justify-content:center;gap:10px;font-size:13px;z-index:100}
+#exp-ov.show{display:flex}
+#exp-bar-wrap{width:200px;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+#exp-bar-fill{height:100%;background:var(--accent);width:0%;transition:width .1s}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="logo">HAND / ANIMATOR</span>
+  <div class="sep"></div>
+  <button class="btn acc" id="btn-kf">+ Keyframe</button>
+  <button class="btn" id="btn-play">▶ Play</button>
+  <button class="btn" id="btn-stop">■ Stop</button>
+  <button class="btn danger" id="btn-del">✕ KF</button>
+  <div class="sep"></div>
+  <button class="btn live" id="btn-cam" title="Start webcam gesture control">◉ Gesture Control</button>
+  <span id="frame-info" style="margin-left:4px">F: 0 / 72</span>
+  <div class="sep"></div>
+  <span style="color:var(--muted);font-size:10px">Duration</span>
+  <select id="dur-sel">
+    <option value="24">1s</option><option value="48">2s</option>
+    <option value="72" selected>3s</option><option value="96">4s</option>
+    <option value="144">6s</option><option value="240">10s</option>
+  </select>
+  <span style="color:var(--muted);font-size:10px">Export FPS</span>
+  <div style="display:flex;align-items:center;gap:3px">
+    <button class="fp" data-fps="2">2</button><button class="fp" data-fps="4">4</button>
+    <button class="fp" data-fps="8">8</button><button class="fp" data-fps="12">12</button>
+    <button class="fp" data-fps="16">16</button><button class="fp on" data-fps="24">24</button>
+    <input type="number" id="fps-in" min="1" max="120" placeholder="—">
+  </div>
+  <span style="color:var(--muted);font-size:10px">Easing</span>
+  <select id="ease-sel"><option value="ease" selected>Ease</option><option value="linear">Linear</option><option value="ease-in">Ease In</option><option value="ease-out">Ease Out</option><option value="hold">Hold</option></select>
+  <div style="flex:1"></div>
+  <button class="btn" id="btn-exp-svg">Export SVG</button>
+  <button class="btn" id="btn-exp-vid">Export Video</button>
+</div>
+
+<div id="body">
+
+  <!-- LEFT: Gesture map -->
+  <div id="gesture-panel">
+    <div class="gp-title">Gesture map</div>
+
+    <div class="gesture-row" id="gr-none">
+      <div class="g-icon">🖐</div>
+      <div class="g-info">
+        <div class="g-name">Open palm</div>
+        <div class="g-action">Idle — no action.<br>Releases grab/drag.</div>
+      </div>
+      <div class="g-status"></div>
+    </div>
+    <div class="gesture-row" id="gr-point">
+      <div class="g-icon">☝️</div>
+      <div class="g-info">
+        <div class="g-name">Pointing up</div>
+        <div class="g-action">Move hand position.<br>Index tip = cursor.</div>
+      </div>
+      <div class="g-status"></div>
+    </div>
+    <div class="gesture-row" id="gr-fist">
+      <div class="g-icon">✊</div>
+      <div class="g-info">
+        <div class="g-name">Closed fist</div>
+        <div class="g-action">Grab &amp; drag.<br>Moves hand in space.</div>
+      </div>
+      <div class="g-status"></div>
+    </div>
+    <div class="gesture-row" id="gr-victory">
+      <div class="g-icon">✌️</div>
+      <div class="g-info">
+        <div class="g-name">Victory</div>
+        <div class="g-action">Mode switch.<br>Cycles: position → curl → wrist.</div>
+      </div>
+      <div class="g-status"></div>
+    </div>
+    <div class="gesture-row" id="gr-thumbup">
+      <div class="g-icon">👍</div>
+      <div class="g-info">
+        <div class="g-name">Thumb up</div>
+        <div class="g-action">Confirm / add keyframe<br>at current frame.</div>
+      </div>
+      <div class="g-status"></div>
+    </div>
+    <div class="gesture-row" id="gr-pinch">
+      <div class="g-icon">🤏</div>
+      <div class="g-info">
+        <div class="g-name">Pinch</div>
+        <div class="g-action">Select / click.<br>Distance = intensity.</div>
+      </div>
+      <div class="g-status"></div>
+    </div>
+
+    <!-- Landmark mini-viz -->
+    <div class="landmark-viz">
+      <div class="gp-title" style="padding:0 0 6px;border:none">Live landmarks</div>
+      <canvas id="lm-canvas" width="176" height="140"></canvas>
+    </div>
+
+    <!-- Thresholds -->
+    <div class="threshold-row">
+      <div class="th-label">Pinch threshold</div>
+      <input type="range" id="th-pinch" min="0.01" max="0.12" step="0.005" value="0.045">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:2px"><span>tight</span><span id="th-pinch-v">0.045</span><span>loose</span></div>
+    </div>
+    <div class="threshold-row">
+      <div class="th-label">Gesture sensitivity</div>
+      <input type="range" id="th-smooth" min="1" max="12" step="1" value="5">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:2px"><span>raw</span><span id="th-smooth-v">5</span><span>smooth</span></div>
+    </div>
+    <div class="threshold-row">
+      <div class="th-label">Curl drive scale</div>
+      <input type="range" id="th-curl" min="0.5" max="3" step="0.1" value="1.4">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:2px"><span>subtle</span><span id="th-curl-v">1.4×</span><span>full</span></div>
+    </div>
+
+    <div style="padding:10px 12px;margin-top:auto;font-size:9px;color:var(--muted);line-height:1.7;border-top:1px solid var(--border)">
+      Requires camera access.<br>Uses MediaPipe Hands via CDN.<br><br>
+      <strong style="color:var(--text)">Active mode:</strong><br>
+      <span id="mode-text" style="color:var(--accent)">position</span>
+    </div>
+  </div>
+
+  <!-- CENTER: Viewport -->
+  <div id="viewport">
+    <svg id="scene"><g id="hand-root-g"></g></svg>
+    <!-- Gesture cursor -->
+    <div id="gesture-cursor" style="display:none">
+      <div id="gc-ring"></div>
+      <div id="gc-dot"></div>
+      <div id="gc-label"></div>
+    </div>
+    <!-- Pinch ring SVG overlay -->
+    <svg id="pinch-ring" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:22"><circle id="pinch-circle" cx="0" cy="0" r="0" fill="none" stroke="#ECE815" stroke-width="1.5" stroke-opacity="0"/></svg>
+    <!-- Mode badge -->
+    <div id="mode-badge"><span class="micon">◆</span><span id="mode-label">position</span></div>
+    <!-- Webcam PiP -->
+    <div id="cam-pip">
+      <video id="cam-video" autoplay muted playsinline></video>
+      <canvas id="cam-canvas"></canvas>
+      <div id="cam-label">live</div>
+      <div id="gesture-badge">—</div>
+    </div>
+    <div id="exp-ov">
+      <div id="exp-msg">Exporting…</div>
+      <div id="exp-bar-wrap"><div id="exp-bar-fill"></div></div>
+      <div id="exp-pct" style="color:var(--accent);font-size:11px"></div>
+    </div>
+    <div style="position:absolute;bottom:10px;left:12px;color:var(--muted);font-size:9px;line-height:2;pointer-events:none">
+      Drag to move · Sliders to pose · + Keyframe to record<br>
+      ◉ Gesture Control for live camera input
+    </div>
+  </div>
+
+  <!-- RIGHT: Manual controls -->
+  <div id="controls">
+    <div class="section">
+      <div class="section-title">Hand in space</div>
+      <div class="ctrl-row"><span class="ctrl-label">X</span><input type="range" id="h-x" min="-500" max="500" value="0"><span class="val" id="v-hx">0</span></div>
+      <div class="ctrl-row"><span class="ctrl-label">Y</span><input type="range" id="h-y" min="-500" max="500" value="0"><span class="val" id="v-hy">0</span></div>
+      <div class="ctrl-row"><span class="ctrl-label">Scale</span><input type="range" id="h-s" min="10" max="120" value="42"><span class="val" id="v-hs">42%</span></div>
+      <div class="ctrl-row"><span class="ctrl-label">Wrist</span><input type="range" class="bidir" id="h-r" min="-180" max="180" value="0"><span class="val" id="v-hr">0°</span></div>
+    </div>
+    <div class="section" style="flex:1">
+      <div class="section-title">Finger tension</div>
+      <!-- Thumb -->
+      <div class="fb"><div class="fn">Thumb</div>
+        <div class="ctrl-row"><span class="ctrl-label">All ↓</span><input type="range" class="fall" data-f="thumb" min="0" max="80" value="0"><span class="val fva" data-f="thumb">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Base</span><input type="range" class="bidir jc" data-b="thumb-base" min="-40" max="60" value="0"><span class="val jv" data-b="thumb-base">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Mid</span><input type="range" class="jc" data-b="thumb-mid" min="0" max="90" value="0"><span class="val jv" data-b="thumb-mid">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Tip</span><input type="range" class="jc" data-b="thumb-tip" min="0" max="90" value="0"><span class="val jv" data-b="thumb-tip">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Spread ↔</span><input type="range" class="bidir jc" data-b="thumb-spread" min="-40" max="40" value="0"><span class="val jv" data-b="thumb-spread">0°</span></div>
+      </div>
+      <!-- Index -->
+      <div class="fb"><div class="fn">Index</div>
+        <div class="ctrl-row"><span class="ctrl-label">All ↓</span><input type="range" class="fall" data-f="index" min="0" max="90" value="0"><span class="val fva" data-f="index">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Base</span><input type="range" class="jc" data-b="index-base" min="0" max="90" value="0"><span class="val jv" data-b="index-base">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Mid</span><input type="range" class="jc" data-b="index-mid" min="0" max="110" value="0"><span class="val jv" data-b="index-mid">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Tip</span><input type="range" class="jc" data-b="index-tip" min="0" max="90" value="0"><span class="val jv" data-b="index-tip">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Spread ↔</span><input type="range" class="bidir jc" data-b="index-spread" min="-25" max="25" value="0"><span class="val jv" data-b="index-spread">0°</span></div>
+      </div>
+      <!-- Middle -->
+      <div class="fb"><div class="fn">Middle</div>
+        <div class="ctrl-row"><span class="ctrl-label">All ↓</span><input type="range" class="fall" data-f="middle" min="0" max="90" value="0"><span class="val fva" data-f="middle">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Base</span><input type="range" class="jc" data-b="middle-base" min="0" max="90" value="0"><span class="val jv" data-b="middle-base">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Mid</span><input type="range" class="jc" data-b="middle-mid" min="0" max="110" value="0"><span class="val jv" data-b="middle-mid">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Tip</span><input type="range" class="jc" data-b="middle-tip" min="0" max="90" value="0"><span class="val jv" data-b="middle-tip">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Spread ↔</span><input type="range" class="bidir jc" data-b="middle-spread" min="-20" max="20" value="0"><span class="val jv" data-b="middle-spread">0°</span></div>
+      </div>
+      <!-- Ring -->
+      <div class="fb"><div class="fn">Ring</div>
+        <div class="ctrl-row"><span class="ctrl-label">All ↓</span><input type="range" class="fall" data-f="ring" min="0" max="90" value="0"><span class="val fva" data-f="ring">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Base</span><input type="range" class="jc" data-b="ring-base" min="0" max="90" value="0"><span class="val jv" data-b="ring-base">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Mid</span><input type="range" class="jc" data-b="ring-mid" min="0" max="110" value="0"><span class="val jv" data-b="ring-mid">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Tip</span><input type="range" class="jc" data-b="ring-tip" min="0" max="90" value="0"><span class="val jv" data-b="ring-tip">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Spread ↔</span><input type="range" class="bidir jc" data-b="ring-spread" min="-20" max="20" value="0"><span class="val jv" data-b="ring-spread">0°</span></div>
+      </div>
+      <!-- Pinky -->
+      <div class="fb"><div class="fn">Pinky</div>
+        <div class="ctrl-row"><span class="ctrl-label">All ↓</span><input type="range" class="fall" data-f="pinky" min="0" max="90" value="0"><span class="val fva" data-f="pinky">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Base</span><input type="range" class="jc" data-b="pinky-base" min="0" max="90" value="0"><span class="val jv" data-b="pinky-base">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Mid</span><input type="range" class="jc" data-b="pinky-mid" min="0" max="110" value="0"><span class="val jv" data-b="pinky-mid">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Tip</span><input type="range" class="jc" data-b="pinky-tip" min="0" max="90" value="0"><span class="val jv" data-b="pinky-tip">0°</span></div>
+        <div class="ctrl-row"><span class="ctrl-label" style="font-size:9px">Spread ↔</span><input type="range" class="bidir jc" data-b="pinky-spread" min="-20" max="30" value="0"><span class="val jv" data-b="pinky-spread">0°</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TIMELINE -->
+<div id="timeline">
+  <div id="tl-bar">
+    <button class="btn" id="tl-prev">|◀</button>
+    <button class="btn" id="tl-next">▶|</button>
+  </div>
+  <div id="tl-scroll"><canvas id="tl-canvas"></canvas></div>
+</div>
+
+<script type="module">
+// ═══════════════════════════════════════════════════════
+// BONE DEFINITIONS
+// ═══════════════════════════════════════════════════════
+const BONES = {
+  wrist:        {path:"M296.93 609.29L461.07 612.55L478.85 767.81H283.06L296.93 609.29Z",                                                                                     pivot:{x:379,y:611},parent:null,          children:['palm']},
+  palm:         {path:"M470.38 603.62L297.44 602.47L279.06 378.94H484.96L470.38 603.62Z",                                                                                     pivot:{x:382,y:603},parent:'wrist',       children:['thumb-base','index-base','middle-base','ring-base','pinky-base']},
+  'thumb-base': {path:"M291.12 603.62L283.42 497.75L267.59 468.56H215.01L291.12 603.62Z",                                                                                     pivot:{x:253,y:497},parent:'palm',        children:['thumb-mid']},
+  'thumb-mid':  {path:"M262.59 384.01H219.01L215.01 464.26H267.59L262.59 384.01Z",                                                                                            pivot:{x:241,y:464},parent:'thumb-base',  children:['thumb-tip']},
+  'thumb-tip':  {path:"M246.29 309.74C238.84 309.74 222.62 315.84 221.9 323.83L219.52 379.71H263.09L260.71 324.2C260.16 316.05 253.87 309.74 246.29 309.74Z",                 pivot:{x:241,y:380},parent:'thumb-mid',   children:[]},
+  'index-base': {path:"M376.1 281.77H336.75L332.06 373.26H381.96L376.1 281.77Z",                                                                                              pivot:{x:357,y:373},parent:'palm',        children:['index-mid']},
+  'index-mid':  {path:"M376.1 183.85H336.75V273.68H376.1V183.85Z",                                                                                                            pivot:{x:357,y:273},parent:'index-base',  children:['index-tip']},
+  'index-tip':  {path:"M356.82 128.75C348.09 128.75 340.8 134.18 339.95 141.3L336.74 178.04H376.09L373.72 141.63C373.08 134.37 365.7 128.75 356.82 128.75Z",                  pivot:{x:357,y:178},parent:'index-mid',   children:[]},
+  'middle-base':{path:"M320.02 287.6H283.42L279.06 373.26H325.47L320.02 287.6Z",                                                                                              pivot:{x:302,y:373},parent:'palm',        children:['middle-mid']},
+  'middle-mid': {path:"M320.01 195.93H283.42V280.03H320.01V195.93Z",                                                                                                          pivot:{x:302,y:280},parent:'middle-base', children:['middle-tip']},
+  'middle-tip': {path:"M302.09 144.34C293.97 144.34 287.19 149.42 286.4 156.09L283.42 190.49H320.01L317.8 156.41C317.2 149.61 310.34 144.35 302.08 144.35L302.09 144.34Z",   pivot:{x:302,y:190},parent:'middle-mid',  children:[]},
+  'ring-base':  {path:"M428.96 288.87H395.39L391.39 373.26H433.96L428.96 288.87Z",                                                                                            pivot:{x:412,y:373},parent:'palm',        children:['ring-mid']},
+  'ring-mid':   {path:"M428.96 198.55H395.39V281.41H428.96V198.55Z",                                                                                                          pivot:{x:412,y:281},parent:'ring-base',   children:['ring-tip']},
+  'ring-tip':   {path:"M412.51 147.72C405.06 147.72 398.84 152.73 398.12 159.29L395.38 193.18H428.95L426.92 159.6C426.37 152.9 420.08 147.72 412.5 147.72H412.51Z",           pivot:{x:412,y:193},parent:'ring-mid',    children:[]},
+  'pinky-base': {path:"M476.35 304.76H445.11L441.39 373.16H481L476.35 304.76Z",                                                                                               pivot:{x:461,y:373},parent:'palm',        children:['pinky-mid']},
+  'pinky-mid':  {path:"M476.35 231.57H445.11V298.72H476.35V231.57Z",                                                                                                          pivot:{x:461,y:298},parent:'pinky-base',  children:['pinky-tip']},
+  'pinky-tip':  {path:"M461.04 190.38C454.11 190.38 448.32 194.44 447.65 199.76L445.11 227.22H476.35L474.46 200.01C473.95 194.58 468.09 190.38 461.04 190.38Z",               pivot:{x:461,y:227},parent:'pinky-mid',   children:[]},
+};
+
+const FINGER_BONES = {
+  thumb:  ['thumb-base','thumb-mid','thumb-tip'],
+  index:  ['index-base','index-mid','index-tip'],
+  middle: ['middle-base','middle-mid','middle-tip'],
+  ring:   ['ring-base','ring-mid','ring-tip'],
+  pinky:  ['pinky-base','pinky-mid','pinky-tip'],
+};
+const SPREAD_BONES = new Set(['thumb-spread','index-spread','middle-spread','ring-spread','pinky-spread']);
+
+// ═══════════════════════════════════════════════════════
+// ANIMATOR STATE
+// ═══════════════════════════════════════════════════════
+const state = {
+  hand:{x:0,y:0,scale:42,wristRot:0},
+  rot:{}, spread:{}
+};
+Object.keys(BONES).forEach(id => state.rot[id]=0);
+Object.keys(FINGER_BONES).forEach(f => state.spread[f]=0);
+
+let keyframes=[], currentFrame=0, totalFrames=72, exportFPS=24;
+let isPlaying=false, playTimer=null;
+
+// ── RENDER ──────────────────────────────────────────────
+function buildBone(id){
+  const bone=BONES[id]; if(!bone) return '';
+  const rot=state.rot[id]||0, j=bone.pivot;
+  const finger=Object.entries(FINGER_BONES).find(([f,bs])=>bs[0]===id)?.[0];
+  const sp = finger ? (state.spread[finger]||0) : 0;
+  const skew = sp!==0 ? ` translate(${j.x},${j.y}) skewX(${sp*0.35}) translate(${-j.x},${-j.y})` : '';
+  const t=`rotate(${rot},${j.x},${j.y})${skew}`;
+  const p=bone.path?`<path d="${bone.path}" fill="#ECE815"/>`:'';
+  return `<g transform="${t}">${p}${bone.children.map(buildBone).join('')}</g>`;
+}
+
+function renderScene(){
+  const g=document.getElementById('hand-root-g');
+  const vp=document.getElementById('viewport');
+  const sc=state.hand.scale/100;
+  const palmCX=382*sc, palmCY=490*sc;
+  const cx=vp.clientWidth/2+state.hand.x, cy=vp.clientHeight/2+state.hand.y;
+  g.setAttribute('transform',`translate(${cx},${cy}) rotate(${state.hand.wristRot}) translate(${-palmCX},${-palmCY}) scale(${sc})`);
+  g.innerHTML=`<path d="M712.98 0H0V901.97H712.98V0Z" fill="#DD6729"/>`+buildBone('wrist');
+}
+
+// ── DRAG ───────────────────────────────────────────────
+const vp=document.getElementById('viewport');
+let drag=false,ds=null,do_=null;
+vp.addEventListener('mousedown',e=>{drag=true;ds={x:e.clientX,y:e.clientY};do_={x:state.hand.x,y:state.hand.y}});
+document.addEventListener('mousemove',e=>{if(!drag)return;state.hand.x=do_.x+(e.clientX-ds.x);state.hand.y=do_.y+(e.clientY-ds.y);sv('h-x','v-hx',state.hand.x,'');sv('h-y','v-hy',state.hand.y,'');renderScene()});
+document.addEventListener('mouseup',()=>drag=false);
+
+// ── CONTROLS ───────────────────────────────────────────
+function sv(sid,vid,val,u){const s=document.getElementById(sid),v=document.getElementById(vid);if(s)s.value=Math.max(+s.min,Math.min(+s.max,val));if(v)v.textContent=Math.round(val)+u}
+function br(id,cb){const el=document.getElementById(id);if(el)el.addEventListener('input',()=>cb(+el.value))}
+br('h-x',v=>{state.hand.x=v;document.getElementById('v-hx').textContent=Math.round(v);renderScene()});
+br('h-y',v=>{state.hand.y=v;document.getElementById('v-hy').textContent=Math.round(v);renderScene()});
+br('h-s',v=>{state.hand.scale=v;document.getElementById('v-hs').textContent=Math.round(v)+'%';renderScene()});
+br('h-r',v=>{state.hand.wristRot=v;document.getElementById('v-hr').textContent=Math.round(v)+'°';renderScene()});
+
+document.querySelectorAll('.jc').forEach(el=>{
+  const b=el.dataset.b;
+  el.addEventListener('input',()=>{
+    const v=+el.value;
+    if(SPREAD_BONES.has(b)){state.spread[b.replace('-spread','')]=v}
+    else{state.rot[b]=v}
+    const ve=document.querySelector(`.jv[data-b="${b}"]`);if(ve)ve.textContent=Math.round(v)+'°';
+    renderScene();
+  });
+});
+document.querySelectorAll('.fall').forEach(el=>{
+  const f=el.dataset.f;
+  el.addEventListener('input',()=>{
+    const v=+el.value;
+    document.querySelector(`.fva[data-f="${f}"]`).textContent=Math.round(v)+'°';
+    FINGER_BONES[f].forEach(b=>{
+      state.rot[b]=v;
+      const s=document.querySelector(`.jc[data-b="${b}"]`),sv2=document.querySelector(`.jv[data-b="${b}"]`);
+      if(s)s.value=v;if(sv2)sv2.textContent=Math.round(v)+'°';
+    });
+    renderScene();
+  });
+});
+
+// FPS presets
+document.querySelectorAll('.fp').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    exportFPS=+btn.dataset.fps;
+    document.querySelectorAll('.fp').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    document.getElementById('fps-in').value='';
+  });
+});
+document.getElementById('fps-in').addEventListener('input',function(){
+  const v=+this.value;if(v>0&&v<=120){exportFPS=v;document.querySelectorAll('.fp').forEach(b=>b.classList.remove('on'));}
+});
+
+// ── KEYFRAMES & INTERPOLATION ─────────────────────────
+function snap(){return{frame:currentFrame,hand:{...state.hand},rot:{...state.rot},spread:{...state.spread},easing:document.getElementById('ease-sel').value}}
+function addKF(){const s=snap();const i=keyframes.findIndex(k=>k.frame===currentFrame);if(i>=0)keyframes[i]=s;else{keyframes.push(s);keyframes.sort((a,b)=>a.frame-b.frame)}drawTL()}
+function delKF(){keyframes=keyframes.filter(k=>k.frame!==currentFrame);drawTL()}
+function lerp(a,b,t){return a+(b-a)*t}
+function ease(t,type){switch(type){case'linear':return t;case'ease-in':return t*t*t;case'ease-out':return 1-Math.pow(1-t,3);case'hold':return 0;default:return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}}
+function applySnap(s){state.hand={...s.hand};Object.assign(state.rot,s.rot);Object.assign(state.spread,s.spread)}
+function interpolate(f){
+  if(!keyframes.length)return;
+  const prev=[...keyframes].reverse().find(k=>k.frame<=f);
+  const next=keyframes.find(k=>k.frame>f);
+  if(!prev){applySnap(keyframes[0]);return}
+  if(!next){applySnap(prev);return}
+  const t=ease((f-prev.frame)/(next.frame-prev.frame),next.easing||'ease');
+  state.hand.x=lerp(prev.hand.x,next.hand.x,t);
+  state.hand.y=lerp(prev.hand.y,next.hand.y,t);
+  state.hand.scale=lerp(prev.hand.scale,next.hand.scale,t);
+  state.hand.wristRot=lerp(prev.hand.wristRot,next.hand.wristRot,t);
+  Object.keys(state.rot).forEach(id=>state.rot[id]=lerp(prev.rot[id]||0,next.rot[id]||0,t));
+  Object.keys(state.spread).forEach(f2=>state.spread[f2]=lerp(prev.spread[f2]||0,next.spread[f2]||0,t));
+}
+function setFrame(f){
+  currentFrame=Math.max(0,Math.min(totalFrames,f));
+  document.getElementById('frame-info').textContent=`F: ${currentFrame} / ${totalFrames}`;
+  if(keyframes.length>=2)interpolate(currentFrame);
+  else if(keyframes.length===1&&keyframes[0].frame===currentFrame)applySnap(keyframes[0]);
+  renderScene();syncSliders();drawTL();
+}
+function syncSliders(){
+  sv('h-x','v-hx',state.hand.x,'');sv('h-y','v-hy',state.hand.y,'');
+  sv('h-s','v-hs',state.hand.scale,'%');sv('h-r','v-hr',state.hand.wristRot,'°');
+  document.querySelectorAll('.jc').forEach(el=>{
+    const b=el.dataset.b,v=SPREAD_BONES.has(b)?state.spread[b.replace('-spread','')]||0:state.rot[b]||0;
+    el.value=v;const ve=document.querySelector(`.jv[data-b="${b}"]`);if(ve)ve.textContent=Math.round(v)+'°';
+  });
+}
+
+// playback
+document.getElementById('btn-play').addEventListener('click',()=>{if(isPlaying)return;isPlaying=true;playTimer=setInterval(()=>{currentFrame=(currentFrame+1)%(totalFrames+1);setFrame(currentFrame)},1000/30)});
+document.getElementById('btn-stop').addEventListener('click',()=>{isPlaying=false;clearInterval(playTimer)});
+document.getElementById('btn-kf').addEventListener('click',addKF);
+document.getElementById('btn-del').addEventListener('click',delKF);
+document.getElementById('tl-prev').addEventListener('click',()=>{const p=[...keyframes].reverse().find(k=>k.frame<currentFrame);if(p)setFrame(p.frame)});
+document.getElementById('tl-next').addEventListener('click',()=>{const n=keyframes.find(k=>k.frame>currentFrame);if(n)setFrame(n.frame)});
+document.getElementById('dur-sel').addEventListener('change',function(){totalFrames=+this.value;document.getElementById('frame-info').textContent=`F: ${currentFrame} / ${totalFrames}`;resizeTL()});
+
+// ── TIMELINE ────────────────────────────────────────────
+const tlCanvas=document.getElementById('tl-canvas');
+const tlCtx=tlCanvas.getContext('2d');
+const LW=90,PF=7,RH=20;
+const TRACKS=[{id:'hand',l:'position/wrist'},{id:'thumb',l:'thumb'},{id:'index',l:'index'},{id:'middle',l:'middle'},{id:'ring',l:'ring'},{id:'pinky',l:'pinky'}];
+
+function resizeTL(){
+  const tl=document.getElementById('timeline'),bar=document.getElementById('tl-bar');
+  tlCanvas.width=Math.max(totalFrames*PF+LW+40,vp.clientWidth);
+  tlCanvas.height=tl.clientHeight-bar.clientHeight-2;
+  drawTL();
+}
+function drawTL(){
+  const W=tlCanvas.width,H=tlCanvas.height;
+  tlCtx.clearRect(0,0,W,H);
+  tlCtx.fillStyle='#111009';tlCtx.fillRect(0,0,W,H);
+  const rh=Math.floor((H-2)/TRACKS.length);
+  TRACKS.forEach((tr,i)=>{
+    const y=i*rh;
+    tlCtx.fillStyle=i%2===0?'#1a1814':'#161310';tlCtx.fillRect(0,y,W,rh);
+    tlCtx.fillStyle='#161310';tlCtx.fillRect(0,y,LW,rh);
+    tlCtx.fillStyle='#615a50';tlCtx.font='10px Courier New';tlCtx.fillText(tr.l,6,y+rh/2+3);
+    tlCtx.strokeStyle='#2e2920';tlCtx.lineWidth=1;
+    tlCtx.beginPath();tlCtx.moveTo(LW,y);tlCtx.lineTo(W,y);tlCtx.stroke();
+    for(let f=0;f<=totalFrames;f+=6){
+      const x=LW+f*PF;
+      tlCtx.strokeStyle='#252018';tlCtx.beginPath();tlCtx.moveTo(x,y);tlCtx.lineTo(x,y+rh);tlCtx.stroke();
+      if(i===0&&f>0){tlCtx.fillStyle='#4a4038';tlCtx.font='9px Courier New';tlCtx.fillText(f,x+2,y+9)}
+    }
+  });
+  keyframes.forEach(kf=>{
+    TRACKS.forEach((tr,i)=>{
+      const x=LW+kf.frame*PF,y=i*rh+rh/2;
+      tlCtx.save();tlCtx.translate(x,y);tlCtx.rotate(Math.PI/4);
+      tlCtx.fillStyle=kf.frame===currentFrame?'#DD6729':'#ECE815';
+      tlCtx.fillRect(-4,-4,8,8);tlCtx.restore();
+    });
+  });
+  const px=LW+currentFrame*PF;
+  tlCtx.strokeStyle='#DD6729';tlCtx.lineWidth=1.5;
+  tlCtx.beginPath();tlCtx.moveTo(px,0);tlCtx.lineTo(px,H);tlCtx.stroke();
+  tlCtx.fillStyle='#DD6729';tlCtx.beginPath();tlCtx.moveTo(px-5,0);tlCtx.lineTo(px+5,0);tlCtx.lineTo(px,7);tlCtx.fill();
+}
+let tlDrag=false;
+tlCanvas.addEventListener('mousedown',()=>tlDrag=true);
+document.addEventListener('mousemove',e=>{if(!tlDrag)return;const r=tlCanvas.getBoundingClientRect();setFrame(Math.max(0,Math.min(totalFrames,Math.round((e.clientX-r.left-LW)/PF))))});
+document.addEventListener('mouseup',()=>tlDrag=false);
+
+// ═══════════════════════════════════════════════════════
+// MEDIAPIPE GESTURE LAYER
+// ═══════════════════════════════════════════════════════
+
+// MediaPipe landmark indices
+const LM = {
+  WRIST:0, THUMB_CMC:1, THUMB_MCP:2, THUMB_IP:3, THUMB_TIP:4,
+  INDEX_MCP:5, INDEX_PIP:6, INDEX_DIP:7, INDEX_TIP:8,
+  MIDDLE_MCP:9, MIDDLE_PIP:10, MIDDLE_DIP:11, MIDDLE_TIP:12,
+  RING_MCP:13, RING_PIP:14, RING_DIP:15, RING_TIP:16,
+  PINKY_MCP:17, PINKY_PIP:18, PINKY_DIP:19, PINKY_TIP:20
+};
+
+let mpHands=null, mpCam=null, gestureActive=false;
+let currentGesture='none', prevGesture='none';
+let gestureMode='position'; // 'position' | 'curl' | 'wrist'
+let smoothBuf=[], smoothN=5;
+let lastLandmarks=null;
+let grabAnchor=null; // {lx,ly,sx,sy} for fist grab
+
+// Mode cycling
+const MODES=['position','curl','wrist'];
+let modeIdx=0;
+
+function setMode(m){
+  modeIdx=MODES.indexOf(m); if(modeIdx<0)modeIdx=0;
+  gestureMode=MODES[modeIdx];
+  document.getElementById('mode-label').textContent=gestureMode;
+  document.getElementById('mode-text').textContent=gestureMode;
+  const mb=document.getElementById('mode-badge');
+  mb.style.borderColor=gestureMode==='position'?'var(--accent)':gestureMode==='curl'?'var(--orange)':'var(--green)';
+}
+
+// Smooth a value through a rolling buffer
+function smoothVal(buf,val,n){buf.push(val);if(buf.length>n)buf.shift();return buf.reduce((a,b)=>a+b,0)/buf.length}
+
+// Distance between two landmarks (normalized 0-1 space)
+function lmDist(a,b){return Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z)}
+
+// Compute per-finger curl from landmark angles (0=straight, 90=fully curled)
+function fingerCurl(lms, mcp, pip, dip, tip){
+  // angle at PIP joint as proxy for curl
+  const v1={x:lms[mcp].x-lms[pip].x, y:lms[mcp].y-lms[pip].y};
+  const v2={x:lms[dip].x-lms[pip].x, y:lms[dip].y-lms[pip].y};
+  const dot=v1.x*v2.x+v1.y*v2.y;
+  const mag=Math.hypot(v1.x,v1.y)*Math.hypot(v2.x,v2.y);
+  if(mag<0.0001)return 0;
+  const angle=Math.acos(Math.max(-1,Math.min(1,dot/mag)))*180/Math.PI;
+  return Math.max(0, 180-angle); // 0=straight, ~150=fist
+}
+
+// Classify gesture from landmarks
+function classifyGesture(lms){
+  // Curl values for each finger (0=open, ~100=closed)
+  const thumbCurl = lmDist(lms[LM.THUMB_TIP], lms[LM.THUMB_MCP]) < lmDist(lms[LM.THUMB_TIP], lms[LM.WRIST]) * 0.4 ? 80 : 0;
+  const indexCurl = fingerCurl(lms, LM.INDEX_MCP, LM.INDEX_PIP, LM.INDEX_DIP, LM.INDEX_TIP);
+  const middleCurl = fingerCurl(lms, LM.MIDDLE_MCP, LM.MIDDLE_PIP, LM.MIDDLE_DIP, LM.MIDDLE_TIP);
+  const ringCurl = fingerCurl(lms, LM.RING_MCP, LM.RING_PIP, LM.RING_DIP, LM.RING_TIP);
+  const pinkyCurl = fingerCurl(lms, LM.PINKY_MCP, LM.PINKY_PIP, LM.PINKY_DIP, LM.PINKY_TIP);
+
+  // Open palm: all fingers extended
+  const allOpen = indexCurl<30 && middleCurl<30 && ringCurl<30 && pinkyCurl<30;
+  // Closed fist
+  const allClosed = indexCurl>60 && middleCurl>60 && ringCurl>60 && pinkyCurl>60;
+  // Pointing: index open, others closed
+  const pointing = indexCurl<30 && middleCurl>55 && ringCurl>55 && pinkyCurl>55;
+  // Victory: index + middle open, ring + pinky closed
+  const victory = indexCurl<30 && middleCurl<30 && ringCurl>55 && pinkyCurl>55;
+  // Thumb up: thumb pointing up (tip above MCP), others closed
+  const thumbUp = lms[LM.THUMB_TIP].y < lms[LM.THUMB_MCP].y - 0.1 && indexCurl>50 && middleCurl>50;
+  // Pinch: thumb tip close to index tip
+  const pinchDist = lmDist(lms[LM.THUMB_TIP], lms[LM.INDEX_TIP]);
+  const pinchThresh = +document.getElementById('th-pinch').value;
+  const pinch = pinchDist < pinchThresh;
+
+  if(pinch) return {gesture:'pinch', curls:{thumb:thumbCurl,index:indexCurl,middle:middleCurl,ring:ringCurl,pinky:pinkyCurl}, pinchDist};
+  if(thumbUp) return {gesture:'thumbup', curls:{thumb:0,index:indexCurl,middle:middleCurl,ring:ringCurl,pinky:pinkyCurl}, pinchDist};
+  if(victory) return {gesture:'victory', curls:{thumb:thumbCurl,index:0,middle:0,ring:ringCurl,pinky:pinkyCurl}, pinchDist};
+  if(pointing) return {gesture:'point', curls:{thumb:thumbCurl,index:0,middle:middleCurl,ring:ringCurl,pinky:pinkyCurl}, pinchDist};
+  if(allClosed) return {gesture:'fist', curls:{thumb:thumbCurl,index:indexCurl,middle:middleCurl,ring:ringCurl,pinky:pinkyCurl}, pinchDist};
+  if(allOpen) return {gesture:'open', curls:{thumb:0,index:0,middle:0,ring:0,pinky:0}, pinchDist};
+  return {gesture:'none', curls:{thumb:thumbCurl,index:indexCurl,middle:middleCurl,ring:ringCurl,pinky:pinkyCurl}, pinchDist};
+}
+
+// Map detected landmarks → rig state
+function applyGestureToRig(lms, result){
+  const n = +document.getElementById('th-smooth').value;
+  smoothN = n;
+  const curlScale = +document.getElementById('th-curl').value;
+  const {gesture, curls, pinchDist} = result;
+
+  // Highlight active gesture row
+  ['none','open','point','fist','victory','thumbup','pinch'].forEach(g=>{
+    const rowMap={none:'gr-none',open:'gr-none',point:'gr-point',fist:'gr-fist',victory:'gr-victory',thumbup:'gr-thumbup',pinch:'gr-pinch'};
+    const row=document.getElementById(rowMap[g]);
+    if(row){row.classList.toggle('active',g===gesture||(g==='none'&&gesture==='open'))}
+  });
+
+  document.getElementById('gesture-badge').textContent = gesture.toUpperCase();
+
+  // ── Cursor position from index tip (always shown when tracking) ──
+  const tip = lms[LM.INDEX_TIP];
+  const vpRect = vp.getBoundingClientRect();
+  // Landmark x is mirrored (camera front-facing), flip back
+  const cx2 = (1 - tip.x) * vpRect.width;
+  const cy2 = tip.y * vpRect.height;
+
+  const cursor = document.getElementById('gesture-cursor');
+  const gcRing = document.getElementById('gc-ring');
+  const gcDot = document.getElementById('gc-dot');
+  const gcLabel = document.getElementById('gc-label');
+
+  cursor.style.display = 'block';
+  cursor.style.left = cx2 + 'px';
+  cursor.style.top = cy2 + 'px';
+  gcLabel.textContent = gesture.toUpperCase();
+
+  // Pinch visual
+  const pinchCircle = document.getElementById('pinch-circle');
+  const pinchThresh = +document.getElementById('th-pinch').value;
+  if(gesture === 'pinch'){
+    const r = Math.max(0, (1 - pinchDist/pinchThresh) * 20);
+    pinchCircle.setAttribute('cx', cx2);
+    pinchCircle.setAttribute('cy', cy2);
+    pinchCircle.setAttribute('r', r);
+    pinchCircle.setAttribute('stroke-opacity','0.8');
+    gcRing.style.borderColor='var(--orange)';
+    gcDot.style.background='var(--orange)';
+  } else {
+    pinchCircle.setAttribute('stroke-opacity','0');
+    gcRing.style.borderColor='var(--accent)';
+    gcDot.style.background='var(--accent)';
+  }
+
+  // ── GESTURE ACTIONS ──────────────────────────────────
+  // Victory = mode switch (rising edge only)
+  if(gesture==='victory' && prevGesture!=='victory'){
+    modeIdx=(modeIdx+1)%MODES.length;
+    setMode(MODES[modeIdx]);
+  }
+
+  // Thumb up = add keyframe (rising edge)
+  if(gesture==='thumbup' && prevGesture!=='thumbup'){
+    addKF();
+    // Flash badge
+    const mb=document.getElementById('mode-badge');
+    mb.style.background='var(--accent)';mb.style.color='#111009';
+    setTimeout(()=>{mb.style.background='';mb.style.color='';},400);
+  }
+
+  // Pointing = move hand position (in position mode)
+  if(gesture==='point' && gestureMode==='position'){
+    const wrist = lms[LM.WRIST];
+    const wx = (1 - wrist.x) * vpRect.width - vpRect.width/2;
+    const wy = wrist.y * vpRect.height - vpRect.height/2;
+    if(!smoothBuf.wx) smoothBuf.wx=[];
+    if(!smoothBuf.wy) smoothBuf.wy=[];
+    state.hand.x = smoothVal(smoothBuf.wx, wx, smoothN);
+    state.hand.y = smoothVal(smoothBuf.wy, wy, smoothN);
+    sv('h-x','v-hx',state.hand.x,'');
+    sv('h-y','v-hy',state.hand.y,'');
+  }
+
+  // Fist = grab & drag (move hand position)
+  if(gesture==='fist'){
+    const wrist=lms[LM.WRIST];
+    const wx=(1-wrist.x)*vpRect.width-vpRect.width/2;
+    const wy=wrist.y*vpRect.height-vpRect.height/2;
+    if(!smoothBuf.wx) smoothBuf.wx=[];
+    if(!smoothBuf.wy) smoothBuf.wy=[];
+    state.hand.x=smoothVal(smoothBuf.wx,wx,smoothN);
+    state.hand.y=smoothVal(smoothBuf.wy,wy,smoothN);
+    sv('h-x','v-hx',state.hand.x,'');
+    sv('h-y','v-hy',state.hand.y,'');
+    gcRing.style.width='36px';gcRing.style.height='36px';
+  } else {
+    gcRing.style.width='28px';gcRing.style.height='28px';
+  }
+
+  // Open palm = idle (reset grab anchor)
+  if(gesture==='open') grabAnchor=null;
+
+  // Pinch = scale (in position mode) or select
+  if(gesture==='pinch' && gestureMode==='position'){
+    // Pinch distance drives scale: close pinch = smaller, open = bigger
+    const scaleDrive = Math.max(15, Math.min(100, (pinchDist/0.12)*80+15));
+    if(!smoothBuf.sc) smoothBuf.sc=[];
+    state.hand.scale=smoothVal(smoothBuf.sc,scaleDrive,smoothN);
+    sv('h-s','v-hs',state.hand.scale,'%');
+  }
+
+  // ── CURL MODE: drive fingers from detected curl values ──
+  if(gestureMode==='curl'){
+    const cs=curlScale;
+    const apply=(fname, curlDeg)=>{
+      const clamped=Math.max(0,Math.min(90,curlDeg*cs*0.8));
+      FINGER_BONES[fname].forEach(b=>{
+        state.rot[b]=clamped;
+        const s=document.querySelector(`.jc[data-b="${b}"]`),sv2=document.querySelector(`.jv[data-b="${b}"]`);
+        if(s)s.value=clamped;if(sv2)sv2.textContent=Math.round(clamped)+'°';
+      });
+      const fva=document.querySelector(`.fva[data-f="${fname}"]`);
+      if(fva)fva.textContent=Math.round(clamped)+'°';
+      const fall=document.querySelector(`.fall[data-f="${fname}"]`);
+      if(fall)fall.value=clamped;
+    };
+    apply('thumb', curls.thumb);
+    apply('index', curls.index);
+    apply('middle', curls.middle);
+    apply('ring', curls.ring);
+    apply('pinky', curls.pinky);
+  }
+
+  // ── WRIST MODE: wrist rotation from hand orientation ──
+  if(gestureMode==='wrist'){
+    const w=lms[LM.WRIST], m=lms[LM.MIDDLE_MCP];
+    const angle=Math.atan2(m.y-w.y, w.x-m.x)*180/Math.PI;
+    if(!smoothBuf.wr) smoothBuf.wr=[];
+    const smoothAngle=smoothVal(smoothBuf.wr,angle,smoothN);
+    state.hand.wristRot=smoothAngle-90;
+    sv('h-r','v-hr',state.hand.wristRot,'°');
+  }
+
+  prevGesture=gesture;
+  renderScene();
+
+  // Draw landmark skeleton on PiP canvas
+  drawLandmarks(lms, curls);
+}
+
+// Draw landmarks on webcam pip canvas
+function drawLandmarks(lms, curls){
+  const pipCanvas=document.getElementById('cam-canvas');
+  const ctx=pipCanvas.getContext('2d');
+  pipCanvas.width=200;pipCanvas.height=150;
+  ctx.clearRect(0,0,200,150);
+
+  const CONNECTIONS=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],[0,17],[17,18],[18,19],[19,20]];
+
+  CONNECTIONS.forEach(([a,b])=>{
+    const la=lms[a],lb=lms[b];
+    ctx.beginPath();
+    ctx.moveTo((1-la.x)*200, la.y*150);
+    ctx.lineTo((1-lb.x)*200, lb.y*150);
+    ctx.strokeStyle='rgba(236,232,21,0.5)';ctx.lineWidth=1;ctx.stroke();
+  });
+
+  lms.forEach((lm,i)=>{
+    ctx.beginPath();
+    ctx.arc((1-lm.x)*200, lm.y*150, i===0?4:2.5, 0, Math.PI*2);
+    ctx.fillStyle=i===0?'#DD6729':i===8?'#ECE815':'rgba(236,232,21,0.7)';
+    ctx.fill();
+  });
+
+  // Also draw on landmark viz panel
+  const lmCanvas=document.getElementById('lm-canvas');
+  const lmCtx=lmCanvas.getContext('2d');
+  const lw=lmCanvas.width,lh=lmCanvas.height;
+  lmCtx.clearRect(0,0,lw,lh);
+  lmCtx.fillStyle='#0d0c0a';lmCtx.fillRect(0,0,lw,lh);
+
+  CONNECTIONS.forEach(([a,b])=>{
+    const la=lms[a],lb=lms[b];
+    lmCtx.beginPath();
+    lmCtx.moveTo((1-la.x)*lw,la.y*lh);
+    lmCtx.lineTo((1-lb.x)*lw,lb.y*lh);
+    lmCtx.strokeStyle='rgba(97,90,80,0.8)';lmCtx.lineWidth=1;lmCtx.stroke();
+  });
+  lms.forEach((lm,i)=>{
+    lmCtx.beginPath();
+    lmCtx.arc((1-lm.x)*lw,lm.y*lh,i===0?5:3,0,Math.PI*2);
+    lmCtx.fillStyle=i===0?'#DD6729':i===4||i===8?'#ECE815':'rgba(220,200,150,0.7)';
+    lmCtx.fill();
+  });
+}
+
+// ── START / STOP CAMERA ──────────────────────────────
+const btnCam=document.getElementById('btn-cam');
+btnCam.addEventListener('click',()=>{
+  if(!gestureActive) startGesture(); else stopGesture();
+});
+
+async function startGesture(){
+  try {
+    // Load MediaPipe Hands from CDN
+    const {Hands} = await import('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js');
+
+    const videoEl=document.getElementById('cam-video');
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:'user'}});
+    videoEl.srcObject=stream;
+    await new Promise(r=>videoEl.onloadedmetadata=r);
+    videoEl.play();
+
+    document.getElementById('cam-pip').classList.add('show');
+    btnCam.classList.add('on');
+    btnCam.textContent='■ Stop Gesture';
+    gestureActive=true;
+
+    mpHands=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
+    mpHands.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:0.7,minTrackingConfidence:0.6});
+    mpHands.onResults(results=>{
+      if(!results.multiHandLandmarks||!results.multiHandLandmarks.length) return;
+      const lms=results.multiHandLandmarks[0];
+      lastLandmarks=lms;
+      const r=classifyGesture(lms);
+      applyGestureToRig(lms,r);
+    });
+
+    async function processFrame(){
+      if(!gestureActive)return;
+      if(videoEl.readyState>=2) await mpHands.send({image:videoEl});
+      requestAnimationFrame(processFrame);
+    }
+    processFrame();
+
+  } catch(e){
+    alert('Camera access failed: '+e.message+'\n\nMake sure you\'re on https:// or localhost.');
+  }
+}
+
+function stopGesture(){
+  gestureActive=false;
+  const videoEl=document.getElementById('cam-video');
+  if(videoEl.srcObject) videoEl.srcObject.getTracks().forEach(t=>t.stop());
+  document.getElementById('cam-pip').classList.remove('show');
+  document.getElementById('gesture-cursor').style.display='none';
+  btnCam.classList.remove('on');
+  btnCam.textContent='◉ Gesture Control';
+  // Clear LM canvas
+  const lmCanvas=document.getElementById('lm-canvas');
+  const lmCtx=lmCanvas.getContext('2d');
+  lmCtx.clearRect(0,0,lmCanvas.width,lmCanvas.height);
+}
+
+// Threshold controls
+document.getElementById('th-pinch').addEventListener('input',function(){document.getElementById('th-pinch-v').textContent=this.value});
+document.getElementById('th-smooth').addEventListener('input',function(){document.getElementById('th-smooth-v').textContent=this.value});
+document.getElementById('th-curl').addEventListener('input',function(){document.getElementById('th-curl-v').textContent=this.value+'×'});
+
+// ═══════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════
+function showOv(msg){document.getElementById('exp-ov').classList.add('show');document.getElementById('exp-msg').textContent=msg;document.getElementById('exp-bar-fill').style.width='0%'}
+function hideOv(){document.getElementById('exp-ov').classList.remove('show')}
+function setPct(p){document.getElementById('exp-bar-fill').style.width=p+'%';document.getElementById('exp-pct').textContent=Math.round(p)+'%'}
+
+function getExportFrameIndices(){
+  const step=30/exportFPS;
+  const frames=[];
+  for(let f=0;f<=totalFrames;f+=step)frames.push(Math.round(f));
+  return frames;
+}
+
+async function exportSVG(){
+  if(keyframes.length<2){alert('Add at least 2 keyframes first.');return}
+  showOv('Exporting SVG frames…');
+  isPlaying=false;clearInterval(playTimer);
+  try{
+    const {default:JSZip}=await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
+    const zip=new JSZip(),folder=zip.folder('frames');
+    const fi=getExportFrameIndices();
+    const sceneEl=document.getElementById('scene');
+    for(let i=0;i<fi.length;i++){
+      setFrame(fi[i]);await new Promise(r=>setTimeout(r,8));setPct(i/fi.length*100);
+      const svgData=`<svg xmlns="http://www.w3.org/2000/svg" width="${vp.clientWidth}" height="${vp.clientHeight}">${sceneEl.innerHTML}</svg>`;
+      folder.file(`frame_${String(i).padStart(4,'0')}.svg`,svgData);
+    }
+    const blob=await zip.generateAsync({type:'blob'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`hand_${exportFPS}fps.zip`;a.click();
+  }catch(e){alert('Export error: '+e.message)}
+  hideOv();
+}
+
+async function exportVideo(){
+  if(keyframes.length<2){alert('Add at least 2 keyframes first.');return}
+  showOv('Recording video…');
+  isPlaying=false;clearInterval(playTimer);
+  const W=vp.clientWidth,H=vp.clientHeight;
+  const off=document.createElement('canvas');off.width=W;off.height=H;
+  const offCtx=off.getContext('2d');
+  const rec=new MediaRecorder(off.captureStream(exportFPS),{mimeType:'video/webm;codecs=vp9'});
+  const chunks=[];rec.ondataavailable=e=>chunks.push(e.data);rec.start();
+  const fi=getExportFrameIndices();
+  const sceneEl=document.getElementById('scene');
+  for(let i=0;i<fi.length;i++){
+    setFrame(fi[i]);await new Promise(r=>setTimeout(r,10));setPct(i/fi.length*100);
+    const svgData=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">${sceneEl.innerHTML}</svg>`;
+    const img=new Image(),blob=new Blob([svgData],{type:'image/svg+xml'}),url=URL.createObjectURL(blob);
+    await new Promise(res=>{img.onload=()=>{offCtx.clearRect(0,0,W,H);offCtx.drawImage(img,0,0);URL.revokeObjectURL(url);res()};img.src=url});
+    await new Promise(r=>setTimeout(r,1000/exportFPS));
+  }
+  rec.stop();await new Promise(r=>rec.onstop=r);
+  const blob=new Blob(chunks,{type:'video/webm'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`hand_${exportFPS}fps.webm`;a.click();
+  hideOv();
+}
+
+document.getElementById('btn-exp-svg').addEventListener('click',exportSVG);
+document.getElementById('btn-exp-vid').addEventListener('click',exportVideo);
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+setMode('position');
+window.addEventListener('load',()=>{renderScene();resizeTL();addKF()});
+window.addEventListener('resize',()=>{renderScene();resizeTL()});
+</script>
+</body>
+</html>

@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hand Animator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#111009;--panel:#181511;--border:#2a2620;
+  --accent:#ECE815;--orange:#DD6729;--text:#cbc2b7;--muted:#5a5349;--dim:#201e18;
+}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;font-size:12px;height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+
+/* TOPBAR */
+#topbar{display:flex;align-items:center;gap:7px;padding:5px 12px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.logo{color:var(--accent);letter-spacing:.14em;font-size:12px;margin-right:4px}
+.sep{width:1px;height:16px;background:var(--border);flex-shrink:0}
+.btn{background:var(--dim);border:1px solid var(--border);color:var(--text);padding:4px 10px;cursor:pointer;font-family:inherit;font-size:11px;transition:background .1s;white-space:nowrap}
+.btn:hover{background:#2c2820}
+.btn.acc{background:var(--accent);color:#111009;border-color:var(--accent);font-weight:700}
+.btn.acc:hover{background:#d4d010}
+.btn.warn{background:#2a1010;border-color:#5a2020;color:#e08080}
+select,input[type=number]{background:var(--dim);border:1px solid var(--border);color:var(--text);padding:3px 6px;font-family:inherit;font-size:11px;outline:none}
+#fi{color:var(--accent);font-size:11px;min-width:68px}
+.fp{background:var(--dim);border:1px solid var(--border);color:var(--muted);padding:2px 6px;cursor:pointer;font-family:inherit;font-size:10px;transition:all .1s}
+.fp:hover{color:var(--text)}
+.fp.on{background:var(--accent);color:#111009;border-color:var(--accent);font-weight:700}
+
+/* BODY */
+#body{display:flex;flex:1;min-height:0;overflow:hidden}
+
+/* VIEWPORT — fixed stage with perspective */
+#stage{
+  flex:1;position:relative;overflow:hidden;
+  background:#DD6729;  /* ← Fixed orange background, independent of hand */
+  cursor:grab;
+}
+#stage:active{cursor:grabbing}
+
+/* 3D hand container — this gets CSS 3D transforms */
+#hand-3d{
+  position:absolute;
+  transform-style:preserve-3d;
+  transform-origin:center center;
+  /* perspective applied by parent */
+}
+#stage{perspective:800px;perspective-origin:50% 50%}
+
+/* The SVG inside the 3D container — flat in 3D space */
+#hand-3d svg{
+  position:absolute;
+  overflow:visible;
+  transform-origin:center center;
+}
+
+/* LEFT PANEL */
+#left{width:224px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sec{border-bottom:1px solid var(--border);padding:9px 12px}
+.sec-t{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:8px}
+
+/* 3D rotation controls — two joystick-style pads */
+.pads-row{display:flex;gap:8px;margin-bottom:8px}
+.pad-wrap{flex:1}
+.pad-label{font-size:9px;color:var(--muted);text-align:center;margin-bottom:3px;letter-spacing:.06em}
+.pad{width:100%;aspect-ratio:1;background:var(--dim);border:1px solid var(--border);position:relative;cursor:crosshair;border-radius:3px}
+.pad::before,.pad::after{content:'';position:absolute;background:var(--border)}
+.pad::before{left:50%;top:8px;bottom:8px;width:1px}
+.pad::after{top:50%;left:8px;right:8px;height:1px}
+.pad-thumb{width:10px;height:10px;border-radius:50%;position:absolute;transform:translate(-50%,-50%);pointer-events:none}
+#pt1{background:var(--accent)}
+#pt2{background:var(--orange)}
+
+/* Sliders */
+.cr{display:flex;align-items:center;gap:5px;margin-bottom:6px}
+.cl{font-size:10px;color:var(--muted);width:56px;flex-shrink:0;letter-spacing:.03em}
+input[type=range]{-webkit-appearance:none;flex:1;height:2px;background:var(--border);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--accent);cursor:pointer}
+input[type=range].ob::-webkit-slider-thumb{background:var(--orange)}
+.cv{color:var(--accent);font-size:10px;min-width:30px;text-align:right;flex-shrink:0}
+
+/* Finger accordion */
+.finger{margin-bottom:5px;border:1px solid var(--border);overflow:hidden}
+.fhd{display:flex;align-items:center;padding:5px 7px;background:var(--dim);cursor:pointer;gap:6px}
+.fhd:hover{background:#252018}
+.fname{font-size:10px;text-transform:uppercase;letter-spacing:.07em;width:46px;flex-shrink:0}
+.fbar-wrap{flex:1;height:3px;background:var(--border);overflow:hidden}
+.fbar{height:100%;background:var(--accent);width:0%;transition:width .12s}
+.flbl{font-size:9px;color:var(--muted);min-width:22px;text-align:right}
+.fbody{padding:7px 8px;background:#141210}
+.fbody.h{display:none}
+.jrow{display:flex;align-items:center;gap:5px;margin-bottom:5px}
+.jlbl{font-size:9px;color:var(--muted);width:52px;flex-shrink:0}
+.jval{font-size:9px;color:var(--accent);min-width:26px;text-align:right;flex-shrink:0}
+
+/* TIMELINE */
+#tl-wrap{height:190px;background:var(--panel);border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column}
+#tl-top{display:flex;align-items:center;gap:7px;padding:4px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+#tl-body{flex:1;overflow-x:auto;overflow-y:hidden}
+canvas#tl{display:block}
+
+/* Export overlay */
+#ov{display:none;position:absolute;inset:0;background:rgba(0,0,0,.9);flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:99;font-size:13px}
+#ov.show{display:flex}
+#ovbar{width:200px;height:3px;background:var(--border)}
+#ovfill{height:100%;background:var(--accent);width:0}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="logo">HAND / ANIMATOR</span>
+  <div class="sep"></div>
+  <button class="btn acc" id="btn-kf">+ Keyframe</button>
+  <button class="btn" id="btn-play">▶ Play</button>
+  <button class="btn" id="btn-stop">■ Stop</button>
+  <button class="btn warn" id="btn-del">✕ KF</button>
+  <div class="sep"></div>
+  <span id="fi">F 0 / 72</span>
+  <div class="sep"></div>
+  <span style="color:var(--muted);font-size:10px">Duration</span>
+  <select id="dur">
+    <option value="24">1s</option><option value="48">2s</option>
+    <option value="72" selected>3s</option><option value="96">4s</option>
+    <option value="144">6s</option><option value="240">10s</option>
+  </select>
+  <span style="color:var(--muted);font-size:10px">Export FPS</span>
+  <button class="fp" data-fps="2">2</button>
+  <button class="fp" data-fps="4">4</button>
+  <button class="fp" data-fps="8">8</button>
+  <button class="fp" data-fps="12">12</button>
+  <button class="fp" data-fps="16">16</button>
+  <button class="fp on" data-fps="24">24</button>
+  <input type="number" id="fps-n" min="1" max="120" placeholder="—" style="width:36px">
+  <div class="sep"></div>
+  <select id="ease-sel">
+    <option value="ease" selected>Ease</option>
+    <option value="linear">Linear</option>
+    <option value="ease-in">Ease In</option>
+    <option value="ease-out">Ease Out</option>
+    <option value="hold">Hold</option>
+  </select>
+  <div style="flex:1"></div>
+  <button class="btn" id="btn-esv">↓ SVG Frames</button>
+  <button class="btn" id="btn-evid">↓ Video</button>
+</div>
+
+<div id="body">
+
+  <!-- LEFT CONTROLS -->
+  <div id="left">
+
+    <!-- 3D Rotation — two joystick pads -->
+    <div class="sec">
+      <div class="sec-t">3D rotation</div>
+      <div class="pads-row">
+        <div class="pad-wrap">
+          <div class="pad-label">PITCH · YAW</div>
+          <div class="pad" id="pad1"><div class="pad-thumb" id="pt1"></div></div>
+        </div>
+        <div class="pad-wrap">
+          <div class="pad-label">ROLL · Z-DEPTH</div>
+          <div class="pad" id="pad2"><div class="pad-thumb" id="pt2"></div></div>
+        </div>
+      </div>
+      <div class="cr" style="margin-top:4px">
+        <span class="cl">Pitch X</span>
+        <input type="range" class="ob" id="sl-pitch" min="-90" max="90" value="0">
+        <span class="cv" id="vl-pitch">0°</span>
+      </div>
+      <div class="cr">
+        <span class="cl">Yaw Y</span>
+        <input type="range" class="ob" id="sl-yaw" min="-90" max="90" value="0">
+        <span class="cv" id="vl-yaw">0°</span>
+      </div>
+      <div class="cr">
+        <span class="cl">Roll Z</span>
+        <input type="range" class="ob" id="sl-roll" min="-180" max="180" value="0">
+        <span class="cv" id="vl-roll">0°</span>
+      </div>
+    </div>
+
+    <!-- Position & scale -->
+    <div class="sec">
+      <div class="sec-t">Position in space</div>
+      <div class="cr">
+        <span class="cl">X →</span>
+        <input type="range" id="sl-x" min="-400" max="400" value="0">
+        <span class="cv" id="vl-x">0</span>
+      </div>
+      <div class="cr">
+        <span class="cl">Y ↕</span>
+        <input type="range" id="sl-y" min="-400" max="400" value="0">
+        <span class="cv" id="vl-y">0</span>
+      </div>
+      <div class="cr">
+        <span class="cl">Z depth</span>
+        <input type="range" id="sl-z" min="-300" max="300" value="0">
+        <span class="cv" id="vl-z">0</span>
+      </div>
+      <div class="cr">
+        <span class="cl">Scale</span>
+        <input type="range" id="sl-sc" min="12" max="90" value="38">
+        <span class="cv" id="vl-sc">38%</span>
+      </div>
+    </div>
+
+    <!-- Fingers -->
+    <div class="sec" style="flex:1">
+      <div class="sec-t">Fingers — click to expand</div>
+
+      <div class="finger">
+        <div class="fhd" data-f="thumb">
+          <span class="fname">Thumb</span>
+          <div class="fbar-wrap"><div class="fbar" id="fbar-thumb"></div></div>
+          <span class="flbl" id="flbl-thumb">0°</span>
+        </div>
+        <div class="fbody h" id="fb-thumb">
+          <div class="jrow"><span class="jlbl">All joints</span><input type="range" class="allj" data-f="thumb" min="0" max="70" value="0"><span class="jval jvall" data-f="thumb">0°</span></div>
+          <div class="jrow"><span class="jlbl">CMC flex</span><input type="range" class="ob jsl" data-b="thumb_cmc" min="-20" max="50" value="0"><span class="jval" data-b="thumb_cmc">0°</span></div>
+          <div class="jrow"><span class="jlbl">MCP flex</span><input type="range" class="jsl" data-b="thumb_mcp" min="0" max="60" value="0"><span class="jval" data-b="thumb_mcp">0°</span></div>
+          <div class="jrow"><span class="jlbl">IP flex</span><input type="range" class="jsl" data-b="thumb_ip" min="0" max="80" value="0"><span class="jval" data-b="thumb_ip">0°</span></div>
+          <div class="jrow"><span class="jlbl">Spread</span><input type="range" class="ob jsl" data-b="thumb_abd" min="-40" max="40" value="0"><span class="jval" data-b="thumb_abd">0°</span></div>
+        </div>
+      </div>
+
+      <div class="finger">
+        <div class="fhd" data-f="index">
+          <span class="fname">Index</span>
+          <div class="fbar-wrap"><div class="fbar" id="fbar-index"></div></div>
+          <span class="flbl" id="flbl-index">0°</span>
+        </div>
+        <div class="fbody h" id="fb-index">
+          <div class="jrow"><span class="jlbl">All joints</span><input type="range" class="allj" data-f="index" min="0" max="90" value="0"><span class="jval jvall" data-f="index">0°</span></div>
+          <div class="jrow"><span class="jlbl">MCP flex</span><input type="range" class="jsl" data-b="index_mcp" min="0" max="90" value="0"><span class="jval" data-b="index_mcp">0°</span></div>
+          <div class="jrow"><span class="jlbl">PIP flex</span><input type="range" class="jsl" data-b="index_pip" min="0" max="110" value="0"><span class="jval" data-b="index_pip">0°</span></div>
+          <div class="jrow"><span class="jlbl">DIP flex</span><input type="range" class="jsl" data-b="index_dip" min="0" max="90" value="0"><span class="jval" data-b="index_dip">0°</span></div>
+          <div class="jrow"><span class="jlbl">Spread</span><input type="range" class="ob jsl" data-b="index_abd" min="-20" max="20" value="0"><span class="jval" data-b="index_abd">0°</span></div>
+        </div>
+      </div>
+
+      <div class="finger">
+        <div class="fhd" data-f="middle">
+          <span class="fname">Middle</span>
+          <div class="fbar-wrap"><div class="fbar" id="fbar-middle"></div></div>
+          <span class="flbl" id="flbl-middle">0°</span>
+        </div>
+        <div class="fbody h" id="fb-middle">
+          <div class="jrow"><span class="jlbl">All joints</span><input type="range" class="allj" data-f="middle" min="0" max="90" value="0"><span class="jval jvall" data-f="middle">0°</span></div>
+          <div class="jrow"><span class="jlbl">MCP flex</span><input type="range" class="jsl" data-b="middle_mcp" min="0" max="90" value="0"><span class="jval" data-b="middle_mcp">0°</span></div>
+          <div class="jrow"><span class="jlbl">PIP flex</span><input type="range" class="jsl" data-b="middle_pip" min="0" max="110" value="0"><span class="jval" data-b="middle_pip">0°</span></div>
+          <div class="jrow"><span class="jlbl">DIP flex</span><input type="range" class="jsl" data-b="middle_dip" min="0" max="90" value="0"><span class="jval" data-b="middle_dip">0°</span></div>
+          <div class="jrow"><span class="jlbl">Spread</span><input type="range" class="ob jsl" data-b="middle_abd" min="-15" max="15" value="0"><span class="jval" data-b="middle_abd">0°</span></div>
+        </div>
+      </div>
+
+      <div class="finger">
+        <div class="fhd" data-f="ring">
+          <span class="fname">Ring</span>
+          <div class="fbar-wrap"><div class="fbar" id="fbar-ring"></div></div>
+          <span class="flbl" id="flbl-ring">0°</span>
+        </div>
+        <div class="fbody h" id="fb-ring">
+          <div class="jrow"><span class="jlbl">All joints</span><input type="range" class="allj" data-f="ring" min="0" max="90" value="0"><span class="jval jvall" data-f="ring">0°</span></div>
+          <div class="jrow"><span class="jlbl">MCP flex</span><input type="range" class="jsl" data-b="ring_mcp" min="0" max="90" value="0"><span class="jval" data-b="ring_mcp">0°</span></div>
+          <div class="jrow"><span class="jlbl">PIP flex</span><input type="range" class="jsl" data-b="ring_pip" min="0" max="110" value="0"><span class="jval" data-b="ring_pip">0°</span></div>
+          <div class="jrow"><span class="jlbl">DIP flex</span><input type="range" class="jsl" data-b="ring_dip" min="0" max="90" value="0"><span class="jval" data-b="ring_dip">0°</span></div>
+          <div class="jrow"><span class="jlbl">Spread</span><input type="range" class="ob jsl" data-b="ring_abd" min="-15" max="15" value="0"><span class="jval" data-b="ring_abd">0°</span></div>
+        </div>
+      </div>
+
+      <div class="finger">
+        <div class="fhd" data-f="pinky">
+          <span class="fname">Pinky</span>
+          <div class="fbar-wrap"><div class="fbar" id="fbar-pinky"></div></div>
+          <span class="flbl" id="flbl-pinky">0°</span>
+        </div>
+        <div class="fbody h" id="fb-pinky">
+          <div class="jrow"><span class="jlbl">All joints</span><input type="range" class="allj" data-f="pinky" min="0" max="90" value="0"><span class="jval jvall" data-f="pinky">0°</span></div>
+          <div class="jrow"><span class="jlbl">MCP flex</span><input type="range" class="jsl" data-b="pinky_mcp" min="0" max="90" value="0"><span class="jval" data-b="pinky_mcp">0°</span></div>
+          <div class="jrow"><span class="jlbl">PIP flex</span><input type="range" class="jsl" data-b="pinky_pip" min="0" max="110" value="0"><span class="jval" data-b="pinky_pip">0°</span></div>
+          <div class="jrow"><span class="jlbl">DIP flex</span><input type="range" class="jsl" data-b="pinky_dip" min="0" max="90" value="0"><span class="jval" data-b="pinky_dip">0°</span></div>
+          <div class="jrow"><span class="jlbl">Spread</span><input type="range" class="ob jsl" data-b="pinky_abd" min="-15" max="25" value="0"><span class="jval" data-b="pinky_abd">0°</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAGE — fixed orange background -->
+  <div id="stage">
+    <!-- hand-3d is the CSS 3D container, SVG floats inside it -->
+    <div id="hand-3d">
+      <svg id="hsvg" width="713" height="902" viewBox="0 0 713 902" fill="none">
+        <g id="root"></g>
+      </svg>
+    </div>
+    <div id="ov">
+      <div id="ov-msg">Exporting…</div>
+      <div id="ovbar"><div id="ovfill"></div></div>
+      <div id="ovpct" style="color:var(--accent);font-size:11px"></div>
+    </div>
+    <div id="hint" style="position:absolute;bottom:10px;left:12px;color:rgba(0,0,0,.35);font-size:9px;line-height:2;pointer-events:none">
+      Drag stage to move · Joystick pads to rotate in 3D · Sliders for fine control
+    </div>
+  </div>
+</div>
+
+<!-- TIMELINE -->
+<div id="tl-wrap">
+  <div id="tl-top">
+    <button class="btn" id="tl-p">|◀</button>
+    <button class="btn" id="tl-n">▶|</button>
+    <span style="color:var(--muted);font-size:9px;margin-left:6px">Click/drag to scrub · Drag diamonds to retime</span>
+  </div>
+  <div id="tl-body"><canvas id="tl"></canvas></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// BONE DATA — SVG paths + pivot points
+// ══════════════════════════════════════════════════
+const PATHS = {
+  wrist:      "M296.93 609.29L461.07 612.55L478.85 767.81H283.06L296.93 609.29Z",
+  palm:       "M470.38 603.62L297.44 602.47L279.06 378.94H484.96L470.38 603.62Z",
+  thumb_cmc:  "M291.12 603.62L283.42 497.75L267.59 468.56H215.01L291.12 603.62Z",
+  thumb_mcp:  "M262.59 384.01H219.01L215.01 464.26H267.59L262.59 384.01Z",
+  thumb_ip:   "M246.29 309.74C238.84 309.74 222.62 315.84 221.9 323.83L219.52 379.71H263.09L260.71 324.2C260.16 316.05 253.87 309.74 246.29 309.74Z",
+  index_mcp:  "M376.1 281.77H336.75L332.06 373.26H381.96L376.1 281.77Z",
+  index_pip:  "M376.1 183.85H336.75V273.68H376.1V183.85Z",
+  index_dip:  "M356.82 128.75C348.09 128.75 340.8 134.18 339.95 141.3L336.74 178.04H376.09L373.72 141.63C373.08 134.37 365.7 128.75 356.82 128.75Z",
+  middle_mcp: "M320.02 287.6H283.42L279.06 373.26H325.47L320.02 287.6Z",
+  middle_pip: "M320.01 195.93H283.42V280.03H320.01V195.93Z",
+  middle_dip: "M302.09 144.34C293.97 144.34 287.19 149.42 286.4 156.09L283.42 190.49H320.01L317.8 156.41C317.2 149.61 310.34 144.35 302.08 144.35L302.09 144.34Z",
+  ring_mcp:   "M428.96 288.87H395.39L391.39 373.26H433.96L428.96 288.87Z",
+  ring_pip:   "M428.96 198.55H395.39V281.41H428.96V198.55Z",
+  ring_dip:   "M412.51 147.72C405.06 147.72 398.84 152.73 398.12 159.29L395.38 193.18H428.95L426.92 159.6C426.37 152.9 420.08 147.72 412.5 147.72H412.51Z",
+  pinky_mcp:  "M476.35 304.76H445.11L441.39 373.16H481L476.35 304.76Z",
+  pinky_pip:  "M476.35 231.57H445.11V298.72H476.35V231.57Z",
+  pinky_dip:  "M461.04 190.38C454.11 190.38 448.32 194.44 447.65 199.76L445.11 227.22H476.35L474.46 200.01C473.95 194.58 468.09 190.38 461.04 190.38Z",
+};
+
+const PIVOTS = {
+  wrist:      {x:379,y:690}, palm:       {x:382,y:603},
+  thumb_cmc:  {x:258,y:548}, thumb_mcp:  {x:241,y:468}, thumb_ip:  {x:241,y:380},
+  index_mcp:  {x:357,y:373}, index_pip:  {x:357,y:273}, index_dip: {x:357,y:178},
+  middle_mcp: {x:302,y:373}, middle_pip: {x:302,y:280}, middle_dip:{x:302,y:190},
+  ring_mcp:   {x:412,y:373}, ring_pip:   {x:412,y:281}, ring_dip:  {x:412,y:193},
+  pinky_mcp:  {x:461,y:373}, pinky_pip:  {x:461,y:298}, pinky_dip: {x:461,y:227},
+};
+
+// Hierarchy — [id, parent, pathKey]
+const HIER = [
+  ['wrist',      null,         'wrist'],
+  ['palm',       'wrist',      'palm'],
+  ['thumb_cmc',  'palm',       'thumb_cmc'],
+  ['thumb_mcp',  'thumb_cmc',  'thumb_mcp'],
+  ['thumb_ip',   'thumb_mcp',  'thumb_ip'],
+  ['index_mcp',  'palm',       'index_mcp'],
+  ['index_pip',  'index_mcp',  'index_pip'],
+  ['index_dip',  'index_pip',  'index_dip'],
+  ['middle_mcp', 'palm',       'middle_mcp'],
+  ['middle_pip', 'middle_mcp', 'middle_pip'],
+  ['middle_dip', 'middle_pip', 'middle_dip'],
+  ['ring_mcp',   'palm',       'ring_mcp'],
+  ['ring_pip',   'ring_mcp',   'ring_pip'],
+  ['ring_dip',   'ring_pip',   'ring_dip'],
+  ['pinky_mcp',  'palm',       'pinky_mcp'],
+  ['pinky_pip',  'pinky_mcp',  'pinky_pip'],
+  ['pinky_dip',  'pinky_pip',  'pinky_dip'],
+];
+
+const FINGERS = {
+  thumb:  ['thumb_cmc','thumb_mcp','thumb_ip'],
+  index:  ['index_mcp','index_pip','index_dip'],
+  middle: ['middle_mcp','middle_pip','middle_dip'],
+  ring:   ['ring_mcp','ring_pip','ring_dip'],
+  pinky:  ['pinky_mcp','pinky_pip','pinky_dip'],
+};
+
+// ABD bones — lateral spread applied as skewX at MCP level
+const ABD_JOINTS = {
+  thumb:'thumb_cmc', index:'index_mcp', middle:'middle_mcp', ring:'ring_mcp', pinky:'pinky_mcp'
+};
+
+// Build tree
+const kidMap = {}, boneMap = {};
+HIER.forEach(([id,parent,pk]) => { kidMap[id]=[]; boneMap[id]={parent,pk}; });
+HIER.forEach(([id,parent]) => { if(parent) kidMap[parent].push(id); });
+
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+const rot = {};  // joint flexion
+const abd = {};  // finger abduction/spread
+HIER.forEach(([id])=>rot[id]=0);
+Object.keys(FINGERS).forEach(f=>abd[f]=0);
+
+// 3D hand transform
+const H = {
+  x:0, y:0, z:0,      // position (px)
+  pitch:0,             // X-axis rotation (tilt fwd/back)
+  yaw:0,               // Y-axis rotation (turn left/right)
+  roll:0,              // Z-axis rotation (wrist twist)
+  scale:38             // overall scale %
+};
+
+let keyframes=[], frame=0, totalFrames=72, exportFPS=24;
+let playing=false, playTimer=null;
+
+// ══════════════════════════════════════════════════
+// SVG BONE RENDER — recursive <g> nesting (unchanged logic)
+// ══════════════════════════════════════════════════
+function buildBone(id) {
+  const {pk} = boneMap[id];
+  const piv = PIVOTS[pk] || {x:0,y:0};
+  const flex = rot[id] || 0;
+
+  // Find if this bone is the base of any finger (for spread)
+  let spreadAngle = 0;
+  for(const [fname,baseJoint] of Object.entries(ABD_JOINTS)) {
+    if(baseJoint === id) { spreadAngle = abd[fname] || 0; break; }
+  }
+
+  let t;
+  if(spreadAngle !== 0) {
+    t = `rotate(${flex},${piv.x},${piv.y}) translate(${piv.x},${piv.y}) skewX(${spreadAngle*0.45}) translate(${-piv.x},${-piv.y})`;
+  } else {
+    t = `rotate(${flex},${piv.x},${piv.y})`;
+  }
+
+  const path = PATHS[pk] ? `<path d="${PATHS[pk]}" fill="#ECE815"/>` : '';
+  const kids = (kidMap[id]||[]).map(buildBone).join('');
+  return `<g transform="${t}">${path}${kids}</g>`;
+}
+
+function render() {
+  // 1. Update SVG bone tree (no background inside SVG)
+  document.getElementById('root').innerHTML = buildBone('wrist');
+
+  // 2. Apply CSS 3D transform to the hand container
+  //    This keeps the orange stage background fixed and only moves the hand
+  const stage = document.getElementById('stage');
+  const sw = stage.clientWidth, sh = stage.clientHeight;
+  const sc = H.scale / 100;
+
+  // Center of palm in SVG coords
+  const palmCX = 382, palmCY = 490;
+  // SVG natural size scaled
+  const svgW = 713 * sc, svgH = 902 * sc;
+
+  const hand3d = document.getElementById('hand-3d');
+  // Size the SVG
+  const svg = document.getElementById('hsvg');
+  svg.style.width  = svgW + 'px';
+  svg.style.height = svgH + 'px';
+  // Offset inside 3D container so palm center is at container origin
+  svg.style.left = (-palmCX * sc) + 'px';
+  svg.style.top  = (-palmCY * sc) + 'px';
+
+  // Position the 3D container at the right spot on stage + apply 3D rotations
+  hand3d.style.left = (sw/2 + H.x) + 'px';
+  hand3d.style.top  = (sh/2 + H.y) + 'px';
+  hand3d.style.transform = `
+    translateZ(${H.z}px)
+    rotateX(${H.pitch}deg)
+    rotateY(${H.yaw}deg)
+    rotateZ(${H.roll}deg)
+  `;
+
+  updateFingerBars();
+}
+
+function updateFingerBars() {
+  Object.keys(FINGERS).forEach(f => {
+    const avg = FINGERS[f].reduce((s,j)=>s+(rot[j]||0),0)/FINGERS[f].length;
+    const pct = Math.min(100,(avg/90)*100);
+    const bar = document.getElementById('fbar-'+f);
+    const lbl = document.getElementById('flbl-'+f);
+    if(bar) bar.style.width = pct+'%';
+    if(lbl) lbl.textContent = Math.round(avg)+'°';
+  });
+}
+
+// ══════════════════════════════════════════════════
+// JOYSTICK PADS
+// ══════════════════════════════════════════════════
+function setupPad(padId, thumbId, onMove) {
+  const pad = document.getElementById(padId);
+  const thumb = document.getElementById(thumbId);
+  let active = false;
+
+  function setPos(nx, ny) {
+    // nx,ny 0..1 → -1..1
+    const x = nx*2-1, y = ny*2-1;
+    thumb.style.left = (nx*100)+'%';
+    thumb.style.top  = (ny*100)+'%';
+    onMove(x, y);
+  }
+
+  function fromEvent(e) {
+    const rect = pad.getBoundingClientRect();
+    const nx = Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+    const ny = Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height));
+    setPos(nx, ny);
+  }
+
+  pad.addEventListener('mousedown', e => { active=true; fromEvent(e); });
+  document.addEventListener('mousemove', e => { if(active) fromEvent(e); });
+  document.addEventListener('mouseup', () => { active=false; });
+
+  // Init thumb at center
+  setPos(0.5, 0.5);
+}
+
+// Pad 1: pitch (Y drag) + yaw (X drag)
+setupPad('pad1','pt1',(x,y) => {
+  H.yaw   = x * 90;
+  H.pitch = y * 90;
+  document.getElementById('sl-yaw').value = H.yaw;
+  document.getElementById('vl-yaw').textContent = Math.round(H.yaw)+'°';
+  document.getElementById('sl-pitch').value = H.pitch;
+  document.getElementById('vl-pitch').textContent = Math.round(H.pitch)+'°';
+  render();
+});
+
+// Pad 2: roll (X drag) + z-depth (Y drag)
+setupPad('pad2','pt2',(x,y) => {
+  H.roll = x * 180;
+  H.z    = -y * 300;
+  document.getElementById('sl-roll').value = H.roll;
+  document.getElementById('vl-roll').textContent = Math.round(H.roll)+'°';
+  document.getElementById('sl-z').value = H.z;
+  document.getElementById('vl-z').textContent = Math.round(H.z);
+  render();
+});
+
+// ══════════════════════════════════════════════════
+// SLIDER BINDINGS
+// ══════════════════════════════════════════════════
+function bindSl(id, valId, unit, cb) {
+  const el = document.getElementById(id);
+  const vEl = document.getElementById(valId);
+  el.addEventListener('input', () => {
+    const v = parseFloat(el.value);
+    if(vEl) vEl.textContent = Math.round(v)+unit;
+    cb(v);
+  });
+}
+
+bindSl('sl-pitch','vl-pitch','°', v => { H.pitch=v; render(); });
+bindSl('sl-yaw',  'vl-yaw',  '°', v => { H.yaw=v;   render(); });
+bindSl('sl-roll', 'vl-roll', '°', v => { H.roll=v;  render(); });
+bindSl('sl-x',    'vl-x',    '',  v => { H.x=v;     render(); });
+bindSl('sl-y',    'vl-y',    '',  v => { H.y=v;     render(); });
+bindSl('sl-z',    'vl-z',    '',  v => { H.z=v;     render(); });
+bindSl('sl-sc',   'vl-sc',   '%', v => { H.scale=v; render(); });
+
+// Drag stage to move X/Y
+const stage = document.getElementById('stage');
+let stageDrag=false, sdStart=null, sdOrigin=null;
+stage.addEventListener('mousedown', e => {
+  stageDrag=true;
+  sdStart={x:e.clientX,y:e.clientY};
+  sdOrigin={x:H.x,y:H.y};
+});
+document.addEventListener('mousemove', e => {
+  if(!stageDrag) return;
+  H.x = sdOrigin.x+(e.clientX-sdStart.x);
+  H.y = sdOrigin.y+(e.clientY-sdStart.y);
+  document.getElementById('sl-x').value = Math.max(-400,Math.min(400,H.x));
+  document.getElementById('vl-x').textContent = Math.round(H.x);
+  document.getElementById('sl-y').value = Math.max(-400,Math.min(400,H.y));
+  document.getElementById('vl-y').textContent = Math.round(H.y);
+  render();
+});
+document.addEventListener('mouseup', () => { stageDrag=false; });
+
+// Joint sliders
+document.querySelectorAll('.jsl').forEach(sl => {
+  const b = sl.dataset.b;
+  sl.addEventListener('input', () => {
+    const v = parseFloat(sl.value);
+    const vEl = sl.parentElement.querySelector('.jval');
+    if(vEl) vEl.textContent = Math.round(v)+'°';
+    if(b.endsWith('_abd')) {
+      abd[b.replace('_abd','')] = v;
+    } else {
+      rot[b] = v;
+    }
+    render();
+  });
+});
+
+// All-joints slider — cascade curl (MediaPipe biomechanics)
+document.querySelectorAll('.allj').forEach(sl => {
+  const fname = sl.dataset.f;
+  sl.addEventListener('input', () => {
+    const v = parseFloat(sl.value);
+    const vEl = document.querySelector(`.jvall[data-f="${fname}"]`);
+    if(vEl) vEl.textContent = Math.round(v)+'°';
+    const joints = FINGERS[fname];
+    // Cascade: MCP leads, PIP engages at v>20, DIP at v>40
+    rot[joints[0]] = Math.min(v, parseFloat(document.querySelector(`.jsl[data-b="${joints[0]}"]`).max));
+    rot[joints[1]] = Math.min(Math.max(0,(v-20)*1.3), parseFloat(document.querySelector(`.jsl[data-b="${joints[1]}"]`).max));
+    rot[joints[2]] = Math.min(Math.max(0,(v-40)*1.1), parseFloat(document.querySelector(`.jsl[data-b="${joints[2]}"]`).max));
+    // Sync individual sliders + labels
+    joints.forEach(j => {
+      const s = document.querySelector(`.jsl[data-b="${j}"]`);
+      const l = s?.parentElement.querySelector('.jval');
+      if(s) s.value = rot[j];
+      if(l) l.textContent = Math.round(rot[j])+'°';
+    });
+    render();
+  });
+});
+
+// Accordion
+document.querySelectorAll('.fhd').forEach(hd => {
+  hd.addEventListener('click', () => {
+    const fb = document.getElementById('fb-'+hd.dataset.f);
+    if(fb) fb.classList.toggle('h');
+  });
+});
+
+// FPS presets
+document.querySelectorAll('.fp').forEach(btn => {
+  btn.addEventListener('click', () => {
+    exportFPS = +btn.dataset.fps;
+    document.querySelectorAll('.fp').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    document.getElementById('fps-n').value='';
+  });
+});
+document.getElementById('fps-n').addEventListener('input', function(){
+  const v=+this.value;
+  if(v>=1&&v<=120){exportFPS=v;document.querySelectorAll('.fp').forEach(b=>b.classList.remove('on'));}
+});
+
+// ══════════════════════════════════════════════════
+// KEYFRAMES & INTERPOLATION
+// ══════════════════════════════════════════════════
+function snapState() {
+  return {
+    frame, easing: document.getElementById('ease-sel').value,
+    H:{...H}, rot:{...rot}, abd:{...abd}
+  };
+}
+
+function addKF() {
+  const s=snapState();
+  const i=keyframes.findIndex(k=>k.frame===frame);
+  if(i>=0) keyframes[i]=s;
+  else { keyframes.push(s); keyframes.sort((a,b)=>a.frame-b.frame); }
+  drawTL();
+}
+
+function delKF() {
+  keyframes=keyframes.filter(k=>k.frame!==frame);
+  drawTL();
+}
+
+function lerp(a,b,t){return a+(b-a)*t}
+
+function applyEase(t,type){
+  switch(type){
+    case'linear':return t;
+    case'ease-in':return t*t*t;
+    case'ease-out':return 1-Math.pow(1-t,3);
+    case'hold':return 0;
+    default:return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+  }
+}
+
+function applySnap(s){
+  Object.assign(H,s.H); Object.assign(rot,s.rot); Object.assign(abd,s.abd);
+}
+
+function interpolate(f){
+  if(!keyframes.length)return;
+  const prev=[...keyframes].reverse().find(k=>k.frame<=f);
+  const next=keyframes.find(k=>k.frame>f);
+  if(!prev){applySnap(keyframes[0]);return}
+  if(!next){applySnap(prev);return}
+  const t=applyEase((f-prev.frame)/(next.frame-prev.frame),next.easing||'ease');
+  // Interpolate all H properties
+  Object.keys(H).forEach(k=>{ H[k]=lerp(prev.H[k]||0,next.H[k]||0,t); });
+  Object.keys(rot).forEach(id=>{ rot[id]=lerp(prev.rot[id]||0,next.rot[id]||0,t); });
+  Object.keys(abd).forEach(f2=>{ abd[f2]=lerp(prev.abd[f2]||0,next.abd[f2]||0,t); });
+}
+
+function setFrame(f){
+  frame=Math.max(0,Math.min(totalFrames,f));
+  document.getElementById('fi').textContent=`F ${frame} / ${totalFrames}`;
+  if(keyframes.length>=2) interpolate(frame);
+  else if(keyframes.length===1&&keyframes[0].frame===frame) applySnap(keyframes[0]);
+  render();
+  syncAllSliders();
+  drawTL();
+}
+
+function syncAllSliders(){
+  // 3D sliders
+  const map={pitch:'sl-pitch',yaw:'sl-yaw',roll:'sl-roll',x:'sl-x',y:'sl-y',z:'sl-z',scale:'sl-sc'};
+  const vmap={pitch:'vl-pitch',yaw:'vl-yaw',roll:'vl-roll',x:'vl-x',y:'vl-y',z:'vl-z',scale:'vl-sc'};
+  const umap={pitch:'°',yaw:'°',roll:'°',x:'',y:'',z:'',scale:'%'};
+  Object.keys(map).forEach(k=>{
+    const s=document.getElementById(map[k]);
+    const v=document.getElementById(vmap[k]);
+    if(s)s.value=H[k];
+    if(v)v.textContent=Math.round(H[k])+umap[k];
+  });
+  // Sync pad thumbs from H values
+  const p1x=(H.yaw/90+1)/2, p1y=(H.pitch/90+1)/2;
+  const p2x=(H.roll/180+1)/2, p2y=(-H.z/300+1)/2;
+  const pt1=document.getElementById('pt1'), pt2=document.getElementById('pt2');
+  pt1.style.left=(Math.max(0,Math.min(1,p1x))*100)+'%';
+  pt1.style.top =(Math.max(0,Math.min(1,p1y))*100)+'%';
+  pt2.style.left=(Math.max(0,Math.min(1,p2x))*100)+'%';
+  pt2.style.top =(Math.max(0,Math.min(1,p2y))*100)+'%';
+  // Joint sliders
+  document.querySelectorAll('.jsl').forEach(sl=>{
+    const b=sl.dataset.b;
+    const v=b.endsWith('_abd')?(abd[b.replace('_abd','')]||0):(rot[b]||0);
+    sl.value=v;
+    const lbl=sl.parentElement.querySelector('.jval');
+    if(lbl)lbl.textContent=Math.round(v)+'°';
+  });
+}
+
+// ══════════════════════════════════════════════════
+// TIMELINE
+// ══════════════════════════════════════════════════
+const tlC = document.getElementById('tl');
+const tlCtx = tlC.getContext('2d');
+const TL_LW=118, TL_PF=8, TL_RH=22;
+const TRACKS=[
+  {l:'3D rotation (pitch/yaw/roll)'},{l:'position X·Y·Z'},
+  {l:'thumb'},{l:'index'},{l:'middle'},{l:'ring'},{l:'pinky'}
+];
+
+function resizeTL(){
+  const wrap=document.getElementById('tl-wrap');
+  const top=document.getElementById('tl-top');
+  const body=document.getElementById('tl-body');
+  tlC.width=Math.max(totalFrames*TL_PF+TL_LW+40, window.innerWidth);
+  tlC.height=Math.max(body.clientHeight||TRACKS.length*TL_RH+20, TRACKS.length*TL_RH+20);
+  drawTL();
+}
+
+function fToX(f){return TL_LW+f*TL_PF}
+function xToF(x){return Math.round((x-TL_LW)/TL_PF)}
+
+function drawTL(){
+  const W=tlC.width,H2=tlC.height;
+  tlCtx.clearRect(0,0,W,H2);
+  tlCtx.fillStyle='#111009';tlCtx.fillRect(0,0,W,H2);
+
+  const rh=TL_RH;
+  TRACKS.forEach((tr,ti)=>{
+    const y=ti*rh;
+    tlCtx.fillStyle=ti%2===0?'#181511':'#151210';tlCtx.fillRect(0,y,W,rh);
+    tlCtx.fillStyle='#0f0e0a';tlCtx.fillRect(0,y,TL_LW,rh);
+    tlCtx.fillStyle='#5a5349';tlCtx.font='10px Courier New';
+    tlCtx.fillText(tr.l,6,y+rh/2+3);
+    // Tick marks
+    for(let f=0;f<=totalFrames;f+=6){
+      const x=fToX(f);
+      tlCtx.strokeStyle='#222018';tlCtx.lineWidth=1;
+      tlCtx.beginPath();tlCtx.moveTo(x,y);tlCtx.lineTo(x,y+rh);tlCtx.stroke();
+      if(ti===0&&f>0){
+        tlCtx.fillStyle='#433e36';tlCtx.font='9px Courier New';
+        tlCtx.fillText(String(f),x+2,y+9);
+      }
+    }
+    // Separator
+    tlCtx.strokeStyle='#2a2620';tlCtx.lineWidth=1;
+    tlCtx.beginPath();tlCtx.moveTo(TL_LW,y+rh-1);tlCtx.lineTo(W,y+rh-1);tlCtx.stroke();
+  });
+
+  // Keyframe diamonds
+  keyframes.forEach(kf=>{
+    TRACKS.forEach((_,ti)=>{
+      const x=fToX(kf.frame), y=ti*rh+rh/2;
+      const isCur=kf.frame===frame;
+      tlCtx.save();tlCtx.translate(x,y);tlCtx.rotate(Math.PI/4);
+      tlCtx.fillStyle=isCur?'#DD6729':'#ECE815';
+      tlCtx.fillRect(-5,-5,10,10);
+      tlCtx.strokeStyle=isCur?'rgba(255,120,0,.6)':'rgba(180,170,0,.5)';
+      tlCtx.lineWidth=1;tlCtx.strokeRect(-5,-5,10,10);
+      tlCtx.restore();
+    });
+    // Frame label
+    tlCtx.fillStyle=kf.frame===frame?'#DD6729':'#3a3530';
+    tlCtx.font='9px Courier New';
+    tlCtx.fillText(String(kf.frame),fToX(kf.frame)-2,TRACKS.length*rh+12);
+  });
+
+  // Playhead
+  const px=fToX(frame);
+  tlCtx.strokeStyle='#DD6729';tlCtx.lineWidth=1.5;
+  tlCtx.beginPath();tlCtx.moveTo(px,0);tlCtx.lineTo(px,TRACKS.length*rh+14);tlCtx.stroke();
+  tlCtx.fillStyle='#DD6729';
+  tlCtx.beginPath();tlCtx.moveTo(px-5,0);tlCtx.lineTo(px+5,0);tlCtx.lineTo(px,8);tlCtx.fill();
+}
+
+let tlDrag=false, kfDrag=null;
+tlC.addEventListener('mousedown',e=>{
+  const rect=tlC.getBoundingClientRect(), mx=e.clientX-rect.left;
+  // Check for keyframe hit
+  for(let ki=0;ki<keyframes.length;ki++){
+    if(Math.abs(mx-fToX(keyframes[ki].frame))<7){
+      kfDrag={ki,startX:mx,origF:keyframes[ki].frame};
+      return;
+    }
+  }
+  tlDrag=true;
+  setFrame(Math.max(0,Math.min(totalFrames,xToF(mx))));
+});
+document.addEventListener('mousemove',e=>{
+  const rect=tlC.getBoundingClientRect(), mx=e.clientX-rect.left;
+  if(kfDrag!==null){
+    const df=Math.round((mx-kfDrag.startX)/TL_PF);
+    keyframes[kfDrag.ki].frame=Math.max(0,Math.min(totalFrames,kfDrag.origF+df));
+    keyframes.sort((a,b)=>a.frame-b.frame);
+    setFrame(keyframes[kfDrag.ki].frame);
+    return;
+  }
+  if(tlDrag) setFrame(Math.max(0,Math.min(totalFrames,xToF(mx))));
+});
+document.addEventListener('mouseup',()=>{tlDrag=false;kfDrag=null;});
+
+// ══════════════════════════════════════════════════
+// PLAYBACK
+// ══════════════════════════════════════════════════
+document.getElementById('btn-play').addEventListener('click',()=>{
+  if(playing)return;playing=true;
+  playTimer=setInterval(()=>{setFrame((frame+1)%(totalFrames+1));},1000/30);
+});
+document.getElementById('btn-stop').addEventListener('click',()=>{playing=false;clearInterval(playTimer);});
+document.getElementById('btn-kf').addEventListener('click',addKF);
+document.getElementById('btn-del').addEventListener('click',delKF);
+document.getElementById('tl-p').addEventListener('click',()=>{const p=[...keyframes].reverse().find(k=>k.frame<frame);if(p)setFrame(p.frame);});
+document.getElementById('tl-n').addEventListener('click',()=>{const n=keyframes.find(k=>k.frame>frame);if(n)setFrame(n.frame);});
+document.getElementById('dur').addEventListener('change',function(){totalFrames=+this.value;document.getElementById('fi').textContent=`F ${frame} / ${totalFrames}`;resizeTL();});
+
+// ══════════════════════════════════════════════════
+// EXPORT
+// Capture the stage (orange bg + 3D hand) using html2canvas approach
+// ══════════════════════════════════════════════════
+function showOv(msg){
+  const ov=document.getElementById('ov');ov.classList.add('show');
+  document.getElementById('ov-msg').textContent=msg;
+  document.getElementById('ovfill').style.width='0%';
+}
+function hideOv(){document.getElementById('ov').classList.remove('show');}
+function setPct(p){
+  document.getElementById('ovfill').style.width=p+'%';
+  document.getElementById('ovpct').textContent=Math.round(p)+'%';
+}
+
+// For export we render the SVG with perspective baked as inline transforms
+// by computing the 3D projection manually per frame
+function getExportFrames(){
+  const step=30/exportFPS, frames=[];
+  for(let f=0;f<=totalFrames;f+=step) frames.push(Math.round(f));
+  return [...new Set(frames)];
+}
+
+// Build export SVG: orange background + projected hand SVG at correct size
+function buildExportSVG(stageW, stageH){
+  // The hand SVG rendered at scale, with CSS 3D expressed as SVG transforms
+  // We approximate the 3D rotation using matrix3d decomposed to 2D transforms
+  const sc = H.scale/100;
+  const svgW = 713*sc, svgH = 902*sc;
+  const palmCX = 382*sc, palmCY = 490*sc;
+  const cx = stageW/2 + H.x;
+  const cy = stageH/2 + H.y;
+
+  // Approximate 3D rotation: yaw compresses width, pitch compresses height
+  const yawRad = H.yaw * Math.PI/180;
+  const pitchRad = H.pitch * Math.PI/180;
+  const scaleX = Math.cos(yawRad);
+  const scaleY = Math.cos(pitchRad);
+  const skewFromYaw = Math.sin(pitchRad)*Math.sin(yawRad)*0.3;
+  // Z offset as simple scale bump
+  const zScale = 1 + H.z/800;
+
+  // Compose SVG transform
+  const tx = cx - palmCX*scaleX*zScale;
+  const ty = cy - palmCY*scaleY*zScale;
+
+  const bonesSVG = buildBone('wrist');
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${stageW}" height="${stageH}">
+    <rect width="${stageW}" height="${stageH}" fill="#DD6729"/>
+    <g transform="translate(${tx},${ty}) rotate(${H.roll},${palmCX*scaleX*zScale},${palmCY*scaleY*zScale}) scale(${sc*scaleX*zScale},${sc*scaleY*zScale}) skewX(${skewFromYaw*10})">
+      ${bonesSVG}
+    </g>
+  </svg>`;
+}
+
+async function exportSVGFrames(){
+  if(keyframes.length<2){alert('Add at least 2 keyframes first.');return;}
+  showOv('Exporting SVG frames…');
+  playing=false;clearInterval(playTimer);
+  try{
+    const {default:JSZip}=await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
+    const zip=new JSZip(),folder=zip.folder('frames');
+    const frames=getExportFrames();
+    const sw=stage.clientWidth,sh=stage.clientHeight;
+    for(let i=0;i<frames.length;i++){
+      setFrame(frames[i]);await new Promise(r=>setTimeout(r,8));setPct(i/frames.length*100);
+      folder.file(`frame_${String(i).padStart(4,'0')}.svg`,buildExportSVG(sw,sh));
+    }
+    const blob=await zip.generateAsync({type:'blob'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`hand_${exportFPS}fps.zip`;a.click();
+  }catch(e){alert('Export error: '+e.message);}
+  hideOv();
+}
+
+async function exportVideo(){
+  if(keyframes.length<2){alert('Add at least 2 keyframes first.');return;}
+  showOv('Recording video…');
+  playing=false;clearInterval(playTimer);
+  const sw=stage.clientWidth,sh=stage.clientHeight;
+  const off=document.createElement('canvas');off.width=sw;off.height=sh;
+  const offCtx=off.getContext('2d');
+  const rec=new MediaRecorder(off.captureStream(exportFPS),{mimeType:'video/webm;codecs=vp9'});
+  const chunks=[];rec.ondataavailable=e=>chunks.push(e.data);rec.start();
+  const frames=getExportFrames();
+  for(let i=0;i<frames.length;i++){
+    setFrame(frames[i]);await new Promise(r=>setTimeout(r,10));setPct(i/frames.length*100);
+    const svgStr=buildExportSVG(sw,sh);
+    const img=new Image(),blob=new Blob([svgStr],{type:'image/svg+xml'}),url=URL.createObjectURL(blob);
+    await new Promise(res=>{img.onload=()=>{offCtx.clearRect(0,0,sw,sh);offCtx.drawImage(img,0,0);URL.revokeObjectURL(url);res();};img.src=url;});
+    await new Promise(r=>setTimeout(r,1000/exportFPS));
+  }
+  rec.stop();await new Promise(r=>rec.onstop=r);
+  const blob=new Blob(chunks,{type:'video/webm'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`hand_${exportFPS}fps.webm`;a.click();
+  hideOv();
+}
+
+document.getElementById('btn-esv').addEventListener('click',exportSVGFrames);
+document.getElementById('btn-evid').addEventListener('click',exportVideo);
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  render();
+  resizeTL();
+  addKF();
+});
+window.addEventListener('resize',()=>{render();resizeTL();});
+</script>
+</body>
+</html>

@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hand Animator — Pose Rig</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#111009;--panel:#181511;--border:#2a2620;
+  --accent:#ECE815;--orange:#DD6729;--text:#cbc2b7;--muted:#5a5349;--dim:#1e1c16;
+}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;font-size:12px;height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+
+/* TOPBAR */
+#topbar{display:flex;align-items:center;gap:7px;padding:5px 12px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.logo{color:var(--accent);letter-spacing:.14em;font-size:12px}
+.sep{width:1px;height:16px;background:var(--border);flex-shrink:0}
+.btn{background:var(--dim);border:1px solid var(--border);color:var(--text);padding:4px 10px;cursor:pointer;font-family:inherit;font-size:11px;transition:background .1s;white-space:nowrap}
+.btn:hover{background:#2c2820}
+.btn.acc{background:var(--accent);color:#111009;border-color:var(--accent);font-weight:700}
+.btn.acc:hover{background:#d4d010}
+.btn.warn{background:#2a1010;border-color:#5a2020;color:#e08080}
+select,input[type=number]{background:var(--dim);border:1px solid var(--border);color:var(--text);padding:3px 6px;font-family:inherit;font-size:11px;outline:none}
+#fi{color:var(--accent);font-size:11px;min-width:70px}
+.fp{background:var(--dim);border:1px solid var(--border);color:var(--muted);padding:2px 6px;cursor:pointer;font-family:inherit;font-size:10px}
+.fp:hover{color:var(--text)}.fp.on{background:var(--accent);color:#111009;border-color:var(--accent);font-weight:700}
+
+/* BODY */
+#body{display:flex;flex:1;min-height:0;overflow:hidden}
+
+/* STAGE — fixed orange bg */
+#stage{flex:1;position:relative;overflow:hidden;background:#DD6729}
+
+/* The 3D hand container */
+#hand-root{position:absolute;transform-style:preserve-3d}
+#stage{perspective:900px;perspective-origin:50% 45%}
+
+/* Pose layers — all stacked, blended by opacity */
+.pose-layer{position:absolute;top:0;left:0;transform-origin:center center;pointer-events:none}
+
+/* drag cursor on stage */
+#stage.dragging{cursor:grabbing}
+
+/* LEFT PANEL */
+#left{width:230px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sec{border-bottom:1px solid var(--border);padding:10px 13px}
+.sec-t{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:9px}
+
+/* 2D Joystick pad */
+.pad-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:10px}
+.pad-label{font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;display:flex;justify-content:space-between;width:100%}
+.pad{width:100%;aspect-ratio:1;background:var(--dim);border:1px solid var(--border);position:relative;cursor:crosshair;border-radius:3px;overflow:hidden}
+/* Pose labels at corners */
+.pose-corner{position:absolute;font-size:8px;color:var(--muted);letter-spacing:.06em;pointer-events:none}
+.pose-corner.tl{top:4px;left:5px}.pose-corner.tr{top:4px;right:5px}
+.pose-corner.bl{bottom:4px;left:5px}.pose-corner.br{bottom:4px;right:5px}
+.pad::before,.pad::after{content:'';position:absolute;background:rgba(255,255,255,.06)}
+.pad::before{left:50%;top:0;bottom:0;width:1px}
+.pad::after{top:50%;left:0;right:0;height:1px}
+#pad-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid #111009;position:absolute;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 8px rgba(236,232,21,.5)}
+
+/* Sliders */
+.cr{display:flex;align-items:center;gap:5px;margin-bottom:7px}
+.cl{font-size:10px;color:var(--muted);width:60px;flex-shrink:0}
+input[type=range]{-webkit-appearance:none;flex:1;height:2px;background:var(--border);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer}
+input[type=range].ob::-webkit-slider-thumb{background:var(--orange)}
+.cv{color:var(--accent);font-size:10px;min-width:30px;text-align:right;flex-shrink:0}
+
+/* Finger sliders */
+.fsec{margin-bottom:8px}
+.finger-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.finger-name{font-size:10px;text-transform:uppercase;letter-spacing:.07em;width:42px;flex-shrink:0;color:var(--text)}
+.finger-bar-bg{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;position:relative;cursor:pointer}
+.finger-bar-fill{height:100%;background:var(--accent);width:0%;transition:none;border-radius:2px}
+.finger-val{font-size:9px;color:var(--accent);min-width:24px;text-align:right}
+/* Expanded finger detail */
+.finger-detail{padding:4px 0 4px 48px;display:none}
+.finger-detail.open{display:block}
+.jrow{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+.jlbl{font-size:9px;color:var(--muted);width:44px;flex-shrink:0}
+.jval{font-size:9px;color:var(--accent);min-width:24px;text-align:right;flex-shrink:0}
+
+/* Pose indicators */
+.pose-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:middle}
+
+/* TIMELINE */
+#tl-wrap{background:var(--panel);border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;transition:height .18s ease}
+#tl-wrap.col{height:32px!important}
+#tl-wrap.col #tl-content{display:none}
+#tl-hd{display:flex;align-items:center;gap:6px;padding:4px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--panel)}
+#tl-hd:not(.no-click){cursor:pointer}
+#tl-hd:not(.no-click):hover{background:var(--dim)}
+#tl-tog{color:var(--accent);font-size:10px;min-width:14px;transition:transform .18s}
+#tl-wrap.col #tl-tog{transform:rotate(-90deg)}
+#tl-content{display:flex;flex-direction:column;flex:1;min-height:0}
+#tl-scroll{flex:1;overflow:auto}
+#tl-canvas{display:block;cursor:pointer}
+#tl-ruler{display:block}
+
+/* Export overlay */
+#ov{display:none;position:absolute;inset:0;background:rgba(0,0,0,.9);flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:99;font-size:13px}
+#ov.show{display:flex}
+#ov-bar{width:210px;height:3px;background:var(--border)}
+#ov-fill{height:100%;background:var(--accent);width:0}
+
+/* Resize bar */
+#tl-resize{height:4px;background:transparent;cursor:ns-resize;flex-shrink:0}
+#tl-resize:hover,#tl-resize:active{background:var(--accent)}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="logo">HAND / POSE RIG</span>
+  <div class="sep"></div>
+  <button class="btn" id="btn-play">▶ Play</button>
+  <button class="btn" id="btn-stop">■ Stop</button>
+  <span id="fi">F 0 / 72</span>
+  <div class="sep"></div>
+  <span style="color:var(--muted);font-size:10px">Duration</span>
+  <select id="dur">
+    <option value="24">1s</option><option value="48">2s</option>
+    <option value="72" selected>3s</option><option value="96">4s</option>
+    <option value="144">6s</option><option value="240">10s</option>
+  </select>
+  <span style="color:var(--muted);font-size:10px">FPS</span>
+  <button class="fp" data-fps="2">2</button><button class="fp" data-fps="4">4</button>
+  <button class="fp" data-fps="8">8</button><button class="fp" data-fps="12">12</button>
+  <button class="fp" data-fps="16">16</button><button class="fp on" data-fps="24">24</button>
+  <input type="number" id="fps-n" min="1" max="120" placeholder="—" style="width:36px">
+  <div class="sep"></div>
+  <select id="ease-sel"><option value="ease" selected>Ease</option><option value="linear">Linear</option><option value="ease-in">Ease In</option><option value="ease-out">Ease Out</option><option value="hold">Hold</option></select>
+  <div style="flex:1"></div>
+  <button class="btn" id="btn-esv">↓ SVG Frames</button>
+  <button class="btn" id="btn-evid">↓ Video</button>
+</div>
+
+<div id="body">
+
+  <!-- LEFT: All controls -->
+  <div id="left">
+
+    <!-- POSE JOYSTICK — the core JnS control -->
+    <div class="sec">
+      <div class="sec-t">Pose joystick</div>
+      <div class="pad-wrap">
+        <div class="pad-label">
+          <span style="color:var(--muted)">← Side</span>
+          <span style="color:var(--muted)">Pointing →</span>
+        </div>
+        <div class="pad" id="pad">
+          <span class="pose-corner tl">SIDE</span>
+          <span class="pose-corner tr">POINT</span>
+          <span class="pose-corner bl">SIDE</span>
+          <span class="pose-corner br">FRONT</span>
+          <div id="pad-thumb"></div>
+        </div>
+        <div class="pad-label" style="margin-top:4px">
+          <span style="color:var(--muted)">↑ Palm up</span>
+          <span style="color:var(--muted)">Front ↓</span>
+        </div>
+      </div>
+      <!-- Active pose blend readout -->
+      <div style="display:flex;gap:8px;font-size:9px;color:var(--muted);margin-top:2px">
+        <span><span class="pose-dot" style="background:#ECE815"></span>Front <span id="pct-front" style="color:var(--accent)">100%</span></span>
+        <span><span class="pose-dot" style="background:var(--orange)"></span>Point <span id="pct-point" style="color:var(--accent)">0%</span></span>
+        <span><span class="pose-dot" style="background:#4ecb71"></span>Side <span id="pct-side" style="color:var(--accent)">0%</span></span>
+      </div>
+    </div>
+
+    <!-- POSITION + SCALE -->
+    <div class="sec">
+      <div class="sec-t">Hand in space</div>
+      <div class="cr"><span class="cl">X →</span><input type="range" id="sl-x" min="-400" max="400" value="0"><span class="cv" id="vl-x">0</span></div>
+      <div class="cr"><span class="cl">Y ↕</span><input type="range" id="sl-y" min="-400" max="400" value="0"><span class="cv" id="vl-y">0</span></div>
+      <div class="cr"><span class="cl">Scale</span><input type="range" id="sl-sc" min="15" max="120" value="50"><span class="cv" id="vl-sc">50%</span></div>
+      <div class="cr"><span class="cl">Roll Z</span><input type="range" class="ob" id="sl-roll" min="-180" max="180" value="0"><span class="cv" id="vl-roll">0°</span></div>
+    </div>
+
+    <!-- FINGER SLIDERS — one per finger, expandable -->
+    <div class="sec" style="flex:1">
+      <div class="sec-t">Finger curl — drag or click to expand</div>
+
+      <div id="finger-controls"></div>
+
+      <!-- Spread / global -->
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+        <div class="cr"><span class="cl">All curl</span><input type="range" id="sl-all" min="0" max="100" value="0"><span class="cv" id="vl-all">0%</span></div>
+        <div class="cr"><span class="cl">Spread</span><input type="range" class="ob" id="sl-spread" min="0" max="100" value="0"><span class="cv" id="vl-spread">0%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAGE -->
+  <div id="stage">
+    <div id="hand-root">
+      <!-- Pose layers rendered here by JS -->
+    </div>
+    <div id="ov">
+      <div id="ov-msg">Exporting…</div>
+      <div id="ov-bar"><div id="ov-fill"></div></div>
+      <div id="ov-pct" style="color:var(--accent);font-size:11px"></div>
+    </div>
+    <div style="position:absolute;bottom:10px;left:12px;color:rgba(0,0,0,.25);font-size:9px;line-height:1.9;pointer-events:none">
+      Drag stage to move · Joystick to blend poses · Sliders to curl fingers
+    </div>
+  </div>
+</div>
+
+<div id="tl-resize"></div>
+<div id="tl-wrap" style="height:210px">
+  <div id="tl-hd">
+    <span id="tl-tog">▼</span>
+    <span style="font-size:10px;letter-spacing:.08em">TIMELINE</span>
+    <div class="no-click" style="display:flex;align-items:center;gap:5px;margin-left:6px" onclick="event.stopPropagation()">
+      <button class="btn acc" id="btn-kf" style="padding:3px 9px;font-size:10px">+ KF</button>
+      <button class="btn warn" id="btn-del" style="padding:3px 7px;font-size:10px">✕</button>
+      <button class="btn" id="tl-prev" style="padding:3px 7px;font-size:10px">|◀</button>
+      <button class="btn" id="tl-next" style="padding:3px 7px;font-size:10px">▶|</button>
+      <span id="fi2" style="color:var(--accent);font-size:10px;min-width:60px">F 0 / 72</span>
+    </div>
+    <div style="flex:1"></div>
+    <div class="no-click" style="display:flex;align-items:center;gap:5px" onclick="event.stopPropagation()">
+      <span style="color:var(--muted);font-size:9px">track:</span>
+      <select id="track-sel" style="font-size:10px;padding:2px 5px">
+        <option value="pose">Pose (joystick)</option>
+        <option value="position">Position / Scale</option>
+        <option value="fingers">Fingers</option>
+      </select>
+      <select id="ease-sel2" style="font-size:10px;padding:2px 5px">
+        <option value="ease" selected>Ease</option>
+        <option value="linear">Linear</option>
+        <option value="ease-in">Ease In</option>
+        <option value="ease-out">Ease Out</option>
+        <option value="hold">Hold</option>
+      </select>
+    </div>
+  </div>
+  <div id="tl-content">
+    <div style="height:18px;flex-shrink:0;overflow:hidden;border-bottom:1px solid var(--border);display:flex">
+      <div style="width:120px;flex-shrink:0;background:#111009;border-right:1px solid var(--border)"></div>
+      <canvas id="tl-ruler" height="18" style="flex:1"></canvas>
+    </div>
+    <div id="tl-scroll" style="flex:1;overflow:auto">
+      <div style="display:flex">
+        <div id="tl-labels" style="width:120px;flex-shrink:0;position:sticky;left:0;z-index:5;background:var(--panel)"></div>
+        <canvas id="tl-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// THREE REFERENCE POSES — your actual SVG drawings
+// Each pose is the complete set of paths for that hand angle
+// This is the Joysticks 'n Sliders model: blend between complete
+// artist-drawn poses, not computed geometry
+// ═══════════════════════════════════════════════════════════
+
+const POSES = {
+
+  // ── FRONT (Palm facing viewer, fingers up) ──────────────
+  front: {
+    label: 'Front / Palm',
+    bg: '#DD6729',
+    paths: [
+      // wrist
+      {d:"M296.93 609.29L461.07 612.55L478.85 767.81H283.06L296.93 609.29Z", op:1},
+      // palm
+      {d:"M470.38 603.62L297.44 602.47L279.06 378.94H484.96L470.38 603.62Z", op:1},
+      // middle base
+      {d:"M320.02 287.6H283.42L279.06 373.26H325.47L320.02 287.6Z", op:1},
+      // middle mid
+      {d:"M320.01 195.93H283.42V280.03H320.01V195.93Z", op:1},
+      // middle tip
+      {d:"M302.09 144.34C293.97 144.34 287.19 149.42 286.4 156.09L283.42 190.49H320.01L317.8 156.41C317.2 149.61 310.34 144.35 302.08 144.35L302.09 144.34Z", op:1},
+      // thumb base
+      {d:"M291.12 603.62L283.42 497.75L267.59 468.56H215.01L291.12 603.62Z", op:1},
+      // thumb mid
+      {d:"M262.59 384.01H219.01L215.01 464.26H267.59L262.59 384.01Z", op:1},
+      // thumb tip
+      {d:"M246.29 309.74C238.84 309.74 222.62 315.84 221.9 323.83L219.52 379.71H263.09L260.71 324.2C260.16 316.05 253.87 309.74 246.29 309.74Z", op:1},
+      // ring base
+      {d:"M428.96 288.87H395.39L391.39 373.26H433.96L428.96 288.87Z", op:1},
+      // ring mid
+      {d:"M428.96 198.55H395.39V281.41H428.96V198.55Z", op:1},
+      // ring tip
+      {d:"M412.51 147.72C405.06 147.72 398.84 152.73 398.12 159.29L395.38 193.18H428.95L426.92 159.6C426.37 152.9 420.08 147.72 412.5 147.72H412.51Z", op:1},
+      // pinky base
+      {d:"M476.35 304.76H445.11L441.39 373.16H481L476.35 304.76Z", op:1},
+      // pinky mid
+      {d:"M476.35 231.57H445.11V298.72H476.35V231.57Z", op:1},
+      // pinky tip
+      {d:"M461.04 190.38C454.11 190.38 448.32 194.44 447.65 199.76L445.11 227.22H476.35L474.46 200.01C473.95 194.58 468.09 190.38 461.04 190.38Z", op:1},
+      // index base
+      {d:"M376.1 281.77H336.75L332.06 373.26H381.96L376.1 281.77Z", op:1},
+      // index mid
+      {d:"M376.1 183.85H336.75V273.68H376.1V183.85Z", op:1},
+      // index tip
+      {d:"M356.82 128.75C348.09 128.75 340.8 134.18 339.95 141.3L336.74 178.04H376.09L373.72 141.63C373.08 134.37 365.7 128.75 356.82 128.75Z", op:1},
+    ]
+  },
+
+  // ── POINTING ───────────────────────────────────────────
+  point: {
+    label: 'Pointing',
+    bg: '#DD6729',
+    paths: [
+      {d:"M216.5 337.12L256.28 269.98L365.3 361.23L238.6 442L216.5 337.12Z", op:1},
+      {d:"M251.62 267.07L207.4 336.75L128 299.26L178.88 215L251.62 267.07Z", op:1},
+      {d:"M329.79 468.35H366.39L370.75 382.69H324.34L329.79 468.35Z", op:1},
+      {d:"M375.936 555.684L407.624 537.389L365.574 464.556L333.886 482.851L375.936 555.684Z", op:1},
+      {d:"M426.96 588.22C432.93 582.73 434.49 574.39 430.55 568.95L409.46 541.62L382.53 566.4L407.23 589.99C412.27 594.59 420.88 593.82 426.96 588.22Z", op:1},
+      {d:"M464.56 360.37L487.5 323.33L426.33 280.74L398.65 325.43L464.56 360.37Z", op:1},
+      {d:"M273.18 264.33L334.83 320.55L390.32 315.05L421.91 273.03L273.18 264.33Z", op:1},
+      {d:"M546.76 369.07C548.51 361.83 546.84 344.73 539.8 342.29L489.99 327.77L479.73 370.12L530.32 379.93C537.8 381.18 544.97 376.44 546.75 369.07H546.76Z", op:1},
+      {d:"M356.1 468.05L362.12 435.02L279.81 415.95L272.18 457.84L356.1 468.05Z", op:.49},
+      {d:"M447.205 478.991L450.639 445.597L368.213 437.123L364.78 470.517L447.205 478.991Z", op:.49},
+      {d:"M443.44 387.9C435.35 391.48 430.99 399.92 433.36 407.42L446.69 445.64L483.19 429.52L464.83 393.92C461.01 386.89 451.68 384.27 443.44 387.9Z", op:.49},
+      {d:"M323.24 474.42L326.43 443.35L258.78 432.65L254.72 472.05L323.24 474.42Z", op:.3},
+      {d:"M396.137 481.931L399.332 450.855L332.534 443.987L329.339 475.063L396.137 481.931Z", op:.3},
+      {d:"M418.23 406.04C411.55 404.22 404.89 406.61 402.85 411.57L393.18 437.4L423.32 445.61L428.66 418.86C429.59 413.49 425.05 407.9 418.25 406.04H418.23Z", op:.3},
+      {d:"M390.56 460.96L395.97 421.99L305.98 404.79L299.13 454.21L390.56 460.96Z", op:.89},
+      {d:"M493.842 435.997L482.693 398.26L396.544 423.713L407.694 461.45L493.842 435.997Z", op:1},
+      {d:"M529.4 368.62C521.87 364.2 512.83 365.19 508.5 370.91L487.14 400.97L521.08 420.88L537.46 388.28C540.58 381.69 537.06 373.11 529.4 368.62Z", op:.9},
+    ]
+  },
+
+  // ── SIDE ───────────────────────────────────────────────
+  side: {
+    label: 'Side view',
+    bg: '#DD6729',
+    paths: [
+      // faded back fingers
+      {d:"M394.67 286.02H363.44L359.71 354.41H399.32L394.67 286.02Z", op:.19},
+      {d:"M394.68 212.82H363.44V279.97H394.68V212.82Z", op:.19},
+      {d:"M379.37 171.63C372.44 171.63 366.65 175.69 365.98 181.01L363.44 208.47H394.68L392.79 181.26C392.28 175.83 386.42 171.63 379.37 171.63Z", op:.19},
+      // palm
+      {d:"M410 585L283 583.848L288.282 360H395.603L410 585Z", op:.65},
+      // wrist
+      {d:"M286.696 591L413.284 594.249L402 743H321L286.696 591Z", op:1},
+      // main finger (middle) base mid tip
+      {d:"M327.96 268.86H291.36L287 354.52H333.41L327.96 268.86Z", op:1},
+      {d:"M327.95 177.18H291.36V261.28H327.95V177.18Z", op:1},
+      {d:"M310.03 125.6C301.91 125.6 295.13 130.68 294.34 137.35L291.36 171.75H327.95L325.74 137.67C325.14 130.87 318.28 125.61 310.02 125.61L310.03 125.6Z", op:1},
+      // ring (medium opacity)
+      {d:"M376.28 270.12H342.71L338.71 354.52H381.28L376.28 270.12Z", op:.56},
+      {d:"M376.28 179.8H342.71V262.66H376.28V179.8Z", op:.56},
+      {d:"M359.84 128.98C352.39 128.98 346.17 133.99 345.45 140.55L342.71 174.44H376.28L374.25 140.86C373.7 134.16 367.41 128.98 359.83 128.98H359.84Z", op:.56},
+      // index (lighter)
+      {d:"M358.08 263.02H318.74L314.05 354.52H363.94L358.08 263.02Z", op:.78},
+      {d:"M358.09 165.1H318.74V254.93H358.09V165.1Z", op:.78},
+      {d:"M338.81 110C330.08 110 322.79 115.43 321.94 122.55L318.73 159.29H358.08L355.71 122.88C355.07 115.62 347.69 110 338.81 110Z", op:.78},
+      // thumb area
+      {d:"M410.352 352.334L367.744 343.185L348.21 415.107L399.618 426.145L410.352 352.334Z", op:1},
+      {d:"M322.254 535.992L371.639 547.833L398.78 430.046L347.372 419.008L322.254 535.992Z", op:1},
+      {d:"M408.866 281.564C401.582 280 384.537 282.119 382.276 289.223L369.07 339.389L411.669 348.535L420.149 297.703C421.199 290.196 416.277 283.156 408.866 281.564Z", op:1},
+    ]
+  }
+};
+
+// ═══════════════════════════════════════════════════════════
+// FINGER BONE SYSTEM — applied on top of pose blend
+// Controls finger curl using the front-view bones as a rig
+// The curl overrides are composited on the blended pose
+// ═══════════════════════════════════════════════════════════
+
+// Finger curl data: per finger, stores curl % 0-100
+// and per-joint breakdown (MCP, PIP, DIP)
+const FINGERS = ['thumb','index','middle','ring','pinky'];
+
+// Pivot points for each finger's curl (in SVG 713×902 space)
+// Used for the bone rotation composited on top of the pose blend
+const FINGER_PIVOTS = {
+  thumb:  [{x:253,y:497},{x:241,y:464},{x:241,y:380}],
+  index:  [{x:357,y:373},{x:357,y:273},{x:357,y:178}],
+  middle: [{x:302,y:373},{x:302,y:280},{x:302,y:190}],
+  ring:   [{x:412,y:373},{x:412,y:281},{x:412,y:193}],
+  pinky:  [{x:461,y:373},{x:461,y:298},{x:461,y:227}],
+};
+
+// Path indices in POSES.front for each finger's segments
+// [base, mid, tip] — used to apply curl transforms on top
+const FINGER_PATH_IDX = {
+  thumb:  [5,6,7],
+  index:  [14,15,16],
+  middle: [2,3,4],
+  ring:   [8,9,10],
+  pinky:  [11,12,13],
+};
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+
+// Joystick pose blend: x = -1(side)..+1(pointing), y = -1(palmup)..+1(front)
+const pose = {jx: 0, jy: 1}; // start at front (jy=1)
+
+// Position state
+const pos = {x:0, y:0, scale:50, roll:0};
+
+// Finger state: curl 0-100 per finger, and per-joint breakdown
+const fingerState = {};
+FINGERS.forEach(f => {
+  fingerState[f] = {
+    all: 0,       // master curl 0-100
+    mcp: 0, pip: 0, dip: 0,  // individual joints
+    spread: 0,    // lateral
+  };
+});
+
+let frame=0, totalFrames=72, exportFPS=24;
+let playing=false, playTimer=null;
+
+// ═══════════════════════════════════════════════════════════
+// POSE BLEND — the JnS core logic
+// Weights three poses based on joystick position
+// This is barycentric blending across the pose space:
+//   jx controls front↔side (left) and front↔point (right)
+//   jy modulates overall presence of base pose
+// ═══════════════════════════════════════════════════════════
+
+function computePoseWeights(jx, jy) {
+  // jx: -1=side, 0=center, +1=pointing
+  // jy: -1=palm-up(front flipped), 0=center, +1=front
+  // Simple triangular blend:
+  const frontW = Math.max(0, 1 - Math.abs(jx) - Math.max(0, -jy)*0.3);
+  const pointW = Math.max(0, jx) * (1 - Math.abs(jy)*0.2);
+  const sideW  = Math.max(0, -jx) * (1 - Math.abs(jy)*0.2);
+  const total  = frontW + pointW + sideW;
+  if(total < 0.001) return {front:1, point:0, side:0};
+  return {
+    front: frontW/total,
+    point: pointW/total,
+    side:  sideW/total
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER — builds the DOM pose layers + applies finger curls
+// ═══════════════════════════════════════════════════════════
+
+function render() {
+  const stage = document.getElementById('stage');
+  const root  = document.getElementById('hand-root');
+  const sc = pos.scale / 100;
+  const sw = stage.clientWidth, sh = stage.clientHeight;
+
+  // Position the 3D container
+  root.style.left   = (sw/2 + pos.x) + 'px';
+  root.style.top    = (sh/2 + pos.y) + 'px';
+  root.style.transform = `rotateZ(${pos.roll}deg)`;
+
+  // Get pose weights
+  const w = computePoseWeights(pose.jx, pose.jy);
+
+  // Update blend readout
+  document.getElementById('pct-front').textContent = Math.round(w.front*100)+'%';
+  document.getElementById('pct-point').textContent = Math.round(w.point*100)+'%';
+  document.getElementById('pct-side').textContent  = Math.round(w.side*100)+'%';
+
+  // Build/update three SVG layers, each weighted by opacity
+  const poseKeys = ['front','point','side'];
+  poseKeys.forEach(pk => {
+    let layer = document.getElementById('pose-'+pk);
+    if(!layer) {
+      layer = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      layer.id = 'pose-'+pk;
+      layer.setAttribute('width','713');
+      layer.setAttribute('height','902');
+      layer.setAttribute('viewBox','0 0 713 902');
+      layer.style.position='absolute';
+      layer.style.transformOrigin=`${382*sc}px ${490*sc}px`;
+      root.appendChild(layer);
+    }
+
+    const weight = w[pk];
+    layer.style.opacity = weight;
+    layer.style.display = weight < 0.01 ? 'none' : 'block';
+    layer.style.width   = (713*sc)+'px';
+    layer.style.height  = (902*sc)+'px';
+    layer.style.left    = (-382*sc)+'px';
+    layer.style.top     = (-490*sc)+'px';
+
+    if(weight < 0.01) return;
+
+    // Rebuild SVG content
+    const poseData = POSES[pk];
+
+    // Build finger curl transforms for this pose (only applied to front pose)
+    let svgContent = '';
+    poseData.paths.forEach((p, pi) => {
+      // Check if this path belongs to a finger we should curl
+      // Only apply curl transforms when front pose has significant weight
+      let transform = '';
+      if(pk === 'front' && w.front > 0.05) {
+        for(const fname of FINGERS) {
+          const idxs = FINGER_PATH_IDX[fname];
+          const segIdx = idxs.indexOf(pi);
+          if(segIdx >= 0) {
+            // Apply rotation for this segment and all segments above it
+            transform = buildFingerTransform(fname, segIdx, sc);
+            break;
+          }
+        }
+      }
+      const tAttr = transform ? `transform="${transform}"` : '';
+      svgContent += `<path d="${p.d}" fill="#ECE815" opacity="${p.op}" ${tAttr}/>`;
+    });
+
+    layer.innerHTML = svgContent;
+  });
+
+  updateFingerUI();
+}
+
+// Build the cumulative SVG transform for a finger segment
+// segIdx 0=base,1=mid,2=tip; each rotates around its own pivot
+// and carries all children with it via nested transforms
+function buildFingerTransform(fname, segIdx, sc) {
+  // We need to rotate segment at segIdx around its pivot
+  // Plus inherit all rotations above it in the chain
+  const pivots = FINGER_PIVOTS[fname];
+  const fs = fingerState[fname];
+
+  // Joint rotations: MCP=base, PIP=mid, DIP=tip
+  const jointRots = [
+    fingerCurlToAngle(fs.mcp || fs.all*0.4, fname, 0),
+    fingerCurlToAngle(fs.pip || Math.max(0, fs.all-20)*1.4, fname, 1),
+    fingerCurlToAngle(fs.dip || Math.max(0, fs.all-50)*1.2, fname, 2),
+  ];
+
+  // Build nested rotation string: each joint rotates around its pivot
+  // then translates/scales with the SVG
+  // Outermost = MCP, then PIP inside, then DIP
+  // We return the transform for the specific segment
+  // (base segment only has MCP rotation, mid has MCP+PIP, tip has all three)
+
+  let transforms = [];
+  for(let i=0; i <= segIdx; i++) {
+    const piv = pivots[i];
+    const angle = jointRots[i];
+    if(Math.abs(angle) > 0.01) {
+      transforms.push(`rotate(${angle},${piv.x},${piv.y})`);
+    }
+  }
+
+  return transforms.join(' ');
+}
+
+// Convert curl percentage to rotation angle for a given joint
+function fingerCurlToAngle(pct, fname, jointIdx) {
+  if(fname === 'thumb') {
+    // Thumb has different range — more natural motion
+    const maxAngles = [45, 55, 50];
+    return (pct/100) * maxAngles[jointIdx];
+  }
+  const maxAngles = [80, 105, 80]; // MCP, PIP, DIP max degrees
+  return (pct/100) * maxAngles[jointIdx];
+}
+
+function updateFingerUI() {
+  FINGERS.forEach(f => {
+    const fs = fingerState[f];
+    const bar = document.getElementById('fbar-'+f);
+    const val = document.getElementById('fval-'+f);
+    if(bar) bar.style.width = fs.all+'%';
+    if(val) val.textContent = Math.round(fs.all)+'%';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// BUILD FINGER CONTROLS
+// ═══════════════════════════════════════════════════════════
+
+function buildFingerControls() {
+  const container = document.getElementById('finger-controls');
+  container.innerHTML = '';
+
+  FINGERS.forEach(fname => {
+    const wrap = document.createElement('div');
+    wrap.className = 'fsec';
+
+    // Header row with drag slider
+    const row = document.createElement('div');
+    row.className = 'finger-row';
+    row.innerHTML = `
+      <span class="finger-name">${fname}</span>
+      <div class="finger-bar-bg" id="fbg-${fname}">
+        <div class="finger-bar-fill" id="fbar-${fname}"></div>
+      </div>
+      <span class="finger-val" id="fval-${fname}">0%</span>
+    `;
+
+    // Drag on bar = set all curl
+    const bg = row.querySelector('.finger-bar-bg');
+    let dragging = false;
+    bg.addEventListener('mousedown', e => {
+      dragging = true;
+      updateFromBar(e, bg, fname);
+      e.stopPropagation();
+    });
+    document.addEventListener('mousemove', e => {
+      if(dragging) updateFromBar(e, bg, fname);
+    });
+    document.addEventListener('mouseup', () => dragging=false);
+
+    // Click toggles detail
+    bg.addEventListener('click', e => {
+      const det = document.getElementById('fdet-'+fname);
+      if(det) det.classList.toggle('open');
+    });
+
+    // Detail: individual joints
+    const detail = document.createElement('div');
+    detail.className = 'finger-detail';
+    detail.id = 'fdet-'+fname;
+    detail.innerHTML = `
+      <div class="jrow"><span class="jlbl">MCP/CMC</span><input type="range" class="jsl" data-f="${fname}" data-j="mcp" min="0" max="100" value="0"><span class="jval" id="jv-${fname}-mcp">0%</span></div>
+      <div class="jrow"><span class="jlbl">PIP/MCP</span><input type="range" class="jsl" data-f="${fname}" data-j="pip" min="0" max="100" value="0"><span class="jval" id="jv-${fname}-pip">0%</span></div>
+      <div class="jrow"><span class="jlbl">DIP/IP</span><input type="range" class="jsl" data-f="${fname}" data-j="dip" min="0" max="100" value="0"><span class="jval" id="jv-${fname}-dip">0%</span></div>
+      <div class="jrow"><span class="jlbl">Spread</span><input type="range" class="jsl ob" data-f="${fname}" data-j="spread" min="-50" max="50" value="0"><span class="jval" id="jv-${fname}-spread">0%</span></div>
+    `;
+
+    wrap.appendChild(row);
+    wrap.appendChild(detail);
+    container.appendChild(wrap);
+
+    // Bind joint sliders
+    detail.querySelectorAll('.jsl').forEach(sl => {
+      sl.addEventListener('input', () => {
+        const f=sl.dataset.f, j=sl.dataset.j;
+        fingerState[f][j] = +sl.value;
+        document.getElementById(`jv-${f}-${j}`).textContent = Math.round(+sl.value)+'%';
+        // If any individual joint moves, set "all" to average
+        const avg=(fingerState[f].mcp+fingerState[f].pip+fingerState[f].dip)/3;
+        fingerState[f].all=avg;
+        const bar=document.getElementById('fbar-'+f);
+        if(bar)bar.style.width=avg+'%';
+        const val=document.getElementById('fval-'+f);
+        if(val)val.textContent=Math.round(avg)+'%';
+        render();
+      });
+    });
+  });
+}
+
+function updateFromBar(e, bg, fname) {
+  const rect = bg.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(100, (e.clientX-rect.left)/rect.width*100));
+  fingerState[fname].all = pct;
+  // Cascade to joints with natural curl pattern
+  fingerState[fname].mcp = Math.min(pct, 80);
+  fingerState[fname].pip = Math.min(Math.max(0,(pct-15)*1.3), 100);
+  fingerState[fname].dip = Math.min(Math.max(0,(pct-40)*1.3), 100);
+  // Sync joint sliders
+  ['mcp','pip','dip'].forEach(j=>{
+    const sl=document.querySelector(`.jsl[data-f="${fname}"][data-j="${j}"]`);
+    const lbl=document.getElementById(`jv-${fname}-${j}`);
+    if(sl)sl.value=fingerState[fname][j];
+    if(lbl)lbl.textContent=Math.round(fingerState[fname][j])+'%';
+  });
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════
+// JOYSTICK PAD
+// ═══════════════════════════════════════════════════════════
+
+const pad = document.getElementById('pad');
+const padThumb = document.getElementById('pad-thumb');
+let padActive = false;
+
+function setPadPos(nx, ny) {
+  // nx,ny 0..1
+  padThumb.style.left = (nx*100)+'%';
+  padThumb.style.top  = (ny*100)+'%';
+  // Map to -1..1
+  pose.jx = nx*2-1;
+  pose.jy = -(ny*2-1); // flip Y so up=front
+}
+
+function padFromEvent(e) {
+  const rect = pad.getBoundingClientRect();
+  const nx = Math.max(0, Math.min(1, (e.clientX-rect.left)/rect.width));
+  const ny = Math.max(0, Math.min(1, (e.clientY-rect.top)/rect.height));
+  setPadPos(nx, ny);
+  render();
+}
+
+pad.addEventListener('mousedown', e => { padActive=true; padFromEvent(e); e.stopPropagation(); });
+document.addEventListener('mousemove', e => { if(padActive) padFromEvent(e); });
+document.addEventListener('mouseup', () => padActive=false);
+
+// Init joystick at front center-bottom
+setPadPos(0.5, 0.01);
+
+// ═══════════════════════════════════════════════════════════
+// POSITION CONTROLS
+// ═══════════════════════════════════════════════════════════
+
+function setSl(id,vid,v,u){
+  const s=document.getElementById(id),vl=document.getElementById(vid);
+  if(s)s.value=v;if(vl)vl.textContent=Math.round(v)+(u||'');
+}
+function bindSl(id,vid,u,cb){
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('input',()=>{if(vid)document.getElementById(vid).textContent=Math.round(+el.value)+u;cb(+el.value);});
+}
+bindSl('sl-x','vl-x','',v=>{pos.x=v;render()});
+bindSl('sl-y','vl-y','',v=>{pos.y=v;render()});
+bindSl('sl-sc','vl-sc','%',v=>{pos.scale=v;render()});
+bindSl('sl-roll','vl-roll','°',v=>{pos.roll=v;render()});
+
+// Stage drag
+const stage=document.getElementById('stage');
+let stageDrag=false,stageSt=null,stageOr=null;
+stage.addEventListener('mousedown',e=>{
+  if(padActive)return;
+  stageDrag=true;stageSt={x:e.clientX,y:e.clientY};stageOr={x:pos.x,y:pos.y};
+  stage.classList.add('dragging');
+});
+document.addEventListener('mousemove',e=>{
+  if(!stageDrag)return;
+  pos.x=stageOr.x+(e.clientX-stageSt.x);pos.y=stageOr.y+(e.clientY-stageSt.y);
+  setSl('sl-x','vl-x',pos.x,'');setSl('sl-y','vl-y',pos.y,'');render();
+});
+document.addEventListener('mouseup',()=>{stageDrag=false;stage.classList.remove('dragging');});
+
+// All curl + spread
+document.getElementById('sl-all').addEventListener('input', function(){
+  const v=+this.value;
+  document.getElementById('vl-all').textContent=Math.round(v)+'%';
+  FINGERS.forEach(f=>{
+    fingerState[f].all=v;
+    fingerState[f].mcp=Math.min(v,80);
+    fingerState[f].pip=Math.min(Math.max(0,(v-15)*1.3),100);
+    fingerState[f].dip=Math.min(Math.max(0,(v-40)*1.3),100);
+    const bar=document.getElementById('fbar-'+f);
+    const val=document.getElementById('fval-'+f);
+    if(bar)bar.style.width=v+'%';
+    if(val)val.textContent=Math.round(v)+'%';
+    ['mcp','pip','dip'].forEach(j=>{
+      const sl=document.querySelector(`.jsl[data-f="${f}"][data-j="${j}"]`);
+      const lbl=document.getElementById(`jv-${f}-${j}`);
+      if(sl)sl.value=fingerState[f][j];
+      if(lbl)lbl.textContent=Math.round(fingerState[f][j])+'%';
+    });
+  });
+  render();
+});
+
+document.getElementById('sl-spread').addEventListener('input', function(){
+  const v=+this.value;
+  document.getElementById('vl-spread').textContent=Math.round(v)+'%';
+  // Spread fans fingers out — applied as pose.jx offset per finger
+  render();
+});
+
+// ═══════════════════════════════════════════════════════════
+// KEYFRAME SYSTEM — per-track
+// ═══════════════════════════════════════════════════════════
+
+const TRACK_DEFS=[
+  {id:'pose',    label:'Pose (joystick)',    color:'#ECE815'},
+  {id:'position',label:'Position / Scale',  color:'#DD6729'},
+  {id:'fingers', label:'Finger curl',       color:'#4ecb71'},
+];
+const trackKFs={};
+TRACK_DEFS.forEach(t=>trackKFs[t.id]=[]);
+
+function getSnapshot(trackId){
+  switch(trackId){
+    case 'pose':     return {jx:pose.jx,jy:pose.jy};
+    case 'position': return {x:pos.x,y:pos.y,scale:pos.scale,roll:pos.roll};
+    case 'fingers': {
+      const d={};
+      FINGERS.forEach(f=>{d[f]={...fingerState[f]}});
+      return d;
+    }
+  }
+}
+function applySnapshot(trackId,data){
+  switch(trackId){
+    case 'pose':
+      pose.jx=data.jx||0;pose.jy=data.jy||0;
+      // Sync pad thumb
+      setPadPos((pose.jx+1)/2,(-(pose.jy)+1)/2);
+      break;
+    case 'position':
+      pos.x=data.x||0;pos.y=data.y||0;pos.scale=data.scale||50;pos.roll=data.roll||0;
+      setSl('sl-x','vl-x',pos.x,'');setSl('sl-y','vl-y',pos.y,'');
+      setSl('sl-sc','vl-sc',pos.scale,'%');setSl('sl-roll','vl-roll',pos.roll,'°');
+      break;
+    case 'fingers':
+      FINGERS.forEach(f=>{
+        if(data[f]){Object.assign(fingerState[f],data[f]);}
+        const bar=document.getElementById('fbar-'+f);
+        const val=document.getElementById('fval-'+f);
+        if(bar)bar.style.width=(fingerState[f].all||0)+'%';
+        if(val)val.textContent=Math.round(fingerState[f].all||0)+'%';
+        ['mcp','pip','dip','spread'].forEach(j=>{
+          const sl=document.querySelector(`.jsl[data-f="${f}"][data-j="${j}"]`);
+          const lbl=document.getElementById(`jv-${f}-${j}`);
+          if(sl)sl.value=fingerState[f][j]||0;
+          if(lbl)lbl.textContent=Math.round(fingerState[f][j]||0)+'%';
+        });
+      });
+      break;
+  }
+}
+function lerpSnap(trackId,a,b,t){
+  switch(trackId){
+    case 'pose':     return {jx:lerp(a.jx,b.jx,t),jy:lerp(a.jy,b.jy,t)};
+    case 'position': return {x:lerp(a.x,b.x,t),y:lerp(a.y,b.y,t),scale:lerp(a.scale,b.scale,t),roll:lerp(a.roll,b.roll,t)};
+    case 'fingers': {
+      const d={};
+      FINGERS.forEach(f=>{
+        d[f]={};
+        ['all','mcp','pip','dip','spread'].forEach(j=>d[f][j]=lerp(a[f]?.[j]||0,b[f]?.[j]||0,t));
+      });
+      return d;
+    }
+  }
+}
+function lerp(a,b,t){return a+(b-a)*t}
+function applyEase(t,type){
+  switch(type){
+    case'linear':return t;case'ease-in':return t*t*t;case'ease-out':return 1-Math.pow(1-t,3);
+    case'hold':return 0;default:return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+  }
+}
+
+function addKF(){
+  const tid=document.getElementById('track-sel').value;
+  const easing=document.getElementById('ease-sel2').value;
+  const data=getSnapshot(tid);
+  const kfs=trackKFs[tid];
+  const idx=kfs.findIndex(k=>k.frame===frame);
+  if(idx>=0)kfs[idx]={frame,data,easing};
+  else{kfs.push({frame,data,easing});kfs.sort((a,b)=>a.frame-b.frame);}
+  drawTL();
+}
+function delKF(){
+  const tid=document.getElementById('track-sel').value;
+  trackKFs[tid]=trackKFs[tid].filter(k=>k.frame!==frame);
+  drawTL();
+}
+
+function interpolateTrack(tid,f){
+  const kfs=trackKFs[tid];if(!kfs.length)return;
+  const prev=[...kfs].reverse().find(k=>k.frame<=f);
+  const next=kfs.find(k=>k.frame>f);
+  if(!prev){applySnapshot(tid,kfs[0].data);return;}
+  if(!next){applySnapshot(tid,prev.data);return;}
+  const t=applyEase((f-prev.frame)/(next.frame-prev.frame),next.easing||'ease');
+  applySnapshot(tid,lerpSnap(tid,prev.data,next.data,t));
+}
+
+function setFrame(f){
+  frame=Math.max(0,Math.min(totalFrames,f));
+  const fi=`F ${frame} / ${totalFrames}`;
+  document.getElementById('fi').textContent=fi;
+  document.getElementById('fi2').textContent=fi;
+  TRACK_DEFS.forEach(t=>interpolateTrack(t.id,frame));
+  render();drawTL();
+}
+
+// ═══════════════════════════════════════════════════════════
+// TIMELINE
+// ═══════════════════════════════════════════════════════════
+const TLR=24,PF=9,LW=120;
+const tlCanvas=document.getElementById('tl-canvas');
+const tlCtx=tlCanvas.getContext('2d');
+const rulerC=document.getElementById('tl-ruler');
+const rulerCtx=rulerC.getContext('2d');
+let tlH=210,tlCol=false;
+
+function tlW(){return Math.max(totalFrames*PF+80,800)}
+function fX(f){return f*PF}
+function xF(x){return Math.max(0,Math.min(totalFrames,Math.round(x/PF)))}
+
+function drawTL(){
+  const W=tlW(),H=TRACK_DEFS.length*TLR;
+  tlCanvas.width=W;tlCanvas.height=H;
+  // Ruler
+  rulerC.width=W;rulerC.height=18;
+  rulerCtx.fillStyle='#111009';rulerCtx.fillRect(0,0,W,18);
+
+  TRACK_DEFS.forEach((tr,ti)=>{
+    const y=ti*TLR;
+    tlCtx.fillStyle=ti%2?'#141210':'#171511';tlCtx.fillRect(0,y,W,TLR);
+    // Ticks
+    for(let f=0;f<=totalFrames;f+=6){
+      const x=fX(f);
+      tlCtx.strokeStyle='#222018';tlCtx.lineWidth=1;
+      tlCtx.beginPath();tlCtx.moveTo(x,y);tlCtx.lineTo(x,y+TLR);tlCtx.stroke();
+      // Ruler numbers on top row
+      if(ti===0&&f>0){
+        rulerCtx.fillStyle='#4a4038';rulerCtx.font='9px Courier New';
+        rulerCtx.fillText(String(f),x+2,12);
+        rulerCtx.strokeStyle='#2a2620';rulerCtx.lineWidth=1;
+        rulerCtx.beginPath();rulerCtx.moveTo(x,6);rulerCtx.lineTo(x,18);rulerCtx.stroke();
+      }
+    }
+    // Sep
+    tlCtx.strokeStyle='#2a2620';tlCtx.lineWidth=1;
+    tlCtx.beginPath();tlCtx.moveTo(0,y+TLR-1);tlCtx.lineTo(W,y+TLR-1);tlCtx.stroke();
+
+    // KF diamonds + connection lines
+    const kfs=trackKFs[tr.id]||[];
+    if(kfs.length>1){
+      tlCtx.strokeStyle=tr.color;tlCtx.lineWidth=1;tlCtx.globalAlpha=0.25;
+      tlCtx.beginPath();
+      kfs.forEach((k,i)=>{i===0?tlCtx.moveTo(fX(k.frame),y+TLR/2):tlCtx.lineTo(fX(k.frame),y+TLR/2)});
+      tlCtx.stroke();tlCtx.globalAlpha=1;
+    }
+    kfs.forEach(kf=>{
+      const x=fX(kf.frame),cy=y+TLR/2,isCur=kf.frame===frame;
+      tlCtx.save();tlCtx.translate(x,cy);tlCtx.rotate(Math.PI/4);
+      tlCtx.fillStyle=isCur?'#fff':tr.color;
+      tlCtx.globalAlpha=isCur?1:.9;
+      tlCtx.fillRect(-5,-5,10,10);
+      tlCtx.globalAlpha=1;
+      tlCtx.strokeStyle='rgba(0,0,0,.4)';tlCtx.lineWidth=1;
+      tlCtx.strokeRect(-5,-5,10,10);tlCtx.restore();
+    });
+  });
+
+  // Playhead
+  const px=fX(frame);
+  tlCtx.strokeStyle='#DD6729';tlCtx.lineWidth=1.5;
+  tlCtx.beginPath();tlCtx.moveTo(px,0);tlCtx.lineTo(px,H);tlCtx.stroke();
+  rulerCtx.strokeStyle='#DD6729';rulerCtx.lineWidth=1.5;
+  rulerCtx.beginPath();rulerCtx.moveTo(px,0);rulerCtx.lineTo(px,18);rulerCtx.stroke();
+  rulerCtx.fillStyle='#DD6729';
+  rulerCtx.beginPath();rulerCtx.moveTo(px-5,0);rulerCtx.lineTo(px+5,0);rulerCtx.lineTo(px,7);rulerCtx.fill();
+
+  // Labels
+  const labels=document.getElementById('tl-labels');
+  labels.innerHTML='';
+  TRACK_DEFS.forEach(tr=>{
+    const row=document.createElement('div');
+    row.style.cssText=`height:${TLR}px;display:flex;align-items:center;padding:0 8px;border-bottom:1px solid #222018;border-left:3px solid ${tr.color};background:var(--panel);font-size:10px;color:var(--muted);cursor:pointer;white-space:nowrap;overflow:hidden`;
+    row.textContent=tr.label;
+    row.addEventListener('click',()=>{document.getElementById('track-sel').value=tr.id;});
+    labels.appendChild(row);
+  });
+}
+
+// TL interaction
+let tlScrub=false,kfDrag=null;
+tlCanvas.addEventListener('mousedown',e=>{
+  const rect=tlCanvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  const ti=Math.floor(my/TLR);
+  if(ti>=0&&ti<TRACK_DEFS.length){
+    document.getElementById('track-sel').value=TRACK_DEFS[ti].id;
+  }
+  const tid=TRACK_DEFS[ti]?.id;
+  if(tid){
+    const kfs=trackKFs[tid]||[];
+    for(let ki=0;ki<kfs.length;ki++){
+      if(Math.abs(mx-fX(kfs[ki].frame))<7){
+        kfDrag={ti,ki,tid,startX:mx,origF:kfs[ki].frame};
+        return;
+      }
+    }
+  }
+  tlScrub=true;setFrame(xF(mx));
+});
+document.addEventListener('mousemove',e=>{
+  if(kfDrag){
+    const rect=tlCanvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left;
+    const df=Math.round((mx-kfDrag.startX)/PF);
+    trackKFs[kfDrag.tid][kfDrag.ki].frame=Math.max(0,Math.min(totalFrames,kfDrag.origF+df));
+    trackKFs[kfDrag.tid].sort((a,b)=>a.frame-b.frame);drawTL();return;
+  }
+  if(tlScrub){const rect=tlCanvas.getBoundingClientRect();setFrame(xF(e.clientX-rect.left));}
+});
+document.addEventListener('mouseup',()=>{
+  if(kfDrag){const k=trackKFs[kfDrag.tid][kfDrag.ki];if(k)setFrame(k.frame);}
+  tlScrub=false;kfDrag=null;
+});
+rulerC.addEventListener('mousedown',e=>{
+  const rect=rulerC.getBoundingClientRect();
+  tlScrub=true;setFrame(xF(e.clientX-rect.left));
+});
+
+// Collapse
+document.getElementById('tl-hd').addEventListener('click',e=>{
+  if(e.target.tagName==='BUTTON'||e.target.tagName==='SELECT'||e.target.closest('.no-click'))return;
+  tlCol=!tlCol;
+  document.getElementById('tl-wrap').classList.toggle('col',tlCol);
+  if(!tlCol)document.getElementById('tl-wrap').style.height=tlH+'px';
+});
+
+// Resize handle
+const rh=document.getElementById('tl-resize');
+let rsz=false,rszSt=null,rszH=null;
+rh.addEventListener('mousedown',e=>{rsz=true;rszSt=e.clientY;rszH=document.getElementById('tl-wrap').clientHeight;e.stopPropagation();});
+document.addEventListener('mousemove',e=>{
+  if(!rsz)return;
+  const delta=rszSt-e.clientY;
+  tlH=Math.max(80,Math.min(500,rszH+delta));
+  if(!tlCol)document.getElementById('tl-wrap').style.height=tlH+'px';
+  drawTL();
+});
+document.addEventListener('mouseup',()=>rsz=false);
+
+// ═══════════════════════════════════════════════════════════
+// PLAYBACK
+// ═══════════════════════════════════════════════════════════
+document.getElementById('btn-play').addEventListener('click',()=>{
+  if(playing)return;playing=true;
+  playTimer=setInterval(()=>setFrame((frame+1)%(totalFrames+1)),1000/30);
+});
+document.getElementById('btn-stop').addEventListener('click',()=>{playing=false;clearInterval(playTimer);});
+document.getElementById('btn-kf').addEventListener('click',addKF);
+document.getElementById('btn-del').addEventListener('click',delKF);
+document.getElementById('tl-prev').addEventListener('click',()=>{
+  const tid=document.getElementById('track-sel').value;
+  const p=[...trackKFs[tid]].reverse().find(k=>k.frame<frame);if(p)setFrame(p.frame);
+});
+document.getElementById('tl-next').addEventListener('click',()=>{
+  const tid=document.getElementById('track-sel').value;
+  const n=trackKFs[tid].find(k=>k.frame>frame);if(n)setFrame(n.frame);
+});
+document.getElementById('dur').addEventListener('change',function(){
+  totalFrames=+this.value;
+  document.getElementById('fi').textContent=`F ${frame} / ${totalFrames}`;
+  document.getElementById('fi2').textContent=`F ${frame} / ${totalFrames}`;
+  drawTL();
+});
+document.querySelectorAll('.fp').forEach(b=>{
+  b.addEventListener('click',()=>{exportFPS=+b.dataset.fps;document.querySelectorAll('.fp').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.getElementById('fps-n').value='';});
+});
+document.getElementById('fps-n').addEventListener('input',function(){const v=+this.value;if(v>=1&&v<=120){exportFPS=v;document.querySelectorAll('.fp').forEach(b=>b.classList.remove('on'));}});
+
+// ═══════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════
+function showOv(m){document.getElementById('ov').classList.add('show');document.getElementById('ov-msg').textContent=m;document.getElementById('ov-fill').style.width='0%';}
+function hideOv(){document.getElementById('ov').classList.remove('show');}
+function setPct(p){document.getElementById('ov-fill').style.width=p+'%';document.getElementById('ov-pct').textContent=Math.round(p)+'%';}
+function expFrames(){const s=30/exportFPS,f=[];for(let i=0;i<=totalFrames;i+=s)f.push(Math.round(i));return[...new Set(f)];}
+
+function buildExportSVG(sw,sh){
+  const w=computePoseWeights(pose.jx,pose.jy);
+  const sc=pos.scale/100;
+  const cx=sw/2+pos.x, cy=sh/2+pos.y;
+  const palmX=382*sc, palmY=490*sc;
+  const tx=cx-palmX, ty=cy-palmY;
+  let layers='';
+  Object.entries(POSES).forEach(([pk,poseData])=>{
+    const weight=w[pk];if(weight<0.01)return;
+    let paths='';
+    poseData.paths.forEach((p,pi)=>{
+      let transform='';
+      if(pk==='front'&&w.front>0.05){
+        for(const fname of FINGERS){
+          const idxs=FINGER_PATH_IDX[fname];
+          const si=idxs.indexOf(pi);
+          if(si>=0){transform=buildFingerTransform(fname,si,sc);break;}
+        }
+      }
+      const ta=transform?`transform="${transform}"`:'';
+      paths+=`<path d="${p.d}" fill="#ECE815" opacity="${p.op}" ${ta}/>`;
+    });
+    layers+=`<g opacity="${weight}" transform="scale(${sc})">${paths}</g>`;
+  });
+  return`<svg xmlns="http://www.w3.org/2000/svg" width="${sw}" height="${sh}"><rect width="${sw}" height="${sh}" fill="#DD6729"/><g transform="translate(${tx},${ty}) rotate(${pos.roll},${palmX},${palmY})">${layers}</g></svg>`;
+}
+
+async function exportSVGFrames(){
+  showOv('Exporting SVG frames…');playing=false;clearInterval(playTimer);
+  try{
+    const{default:JSZip}=await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
+    const zip=new JSZip(),folder=zip.folder('frames');
+    const frames=expFrames();const sw=stage.clientWidth,sh=stage.clientHeight;
+    for(let i=0;i<frames.length;i++){setFrame(frames[i]);await new Promise(r=>setTimeout(r,8));setPct(i/frames.length*100);folder.file(`frame_${String(i).padStart(4,'0')}.svg`,buildExportSVG(sw,sh));}
+    const blob=await zip.generateAsync({type:'blob'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`hand_${exportFPS}fps.zip`;a.click();
+  }catch(e){alert('Export error: '+e.message);}
+  hideOv();
+}
+
+async function exportVideo(){
+  showOv('Recording video…');playing=false;clearInterval(playTimer);
+  const sw=stage.clientWidth,sh=stage.clientHeight;
+  const off=document.createElement('canvas');off.width=sw;off.height=sh;
+  const offCtx=off.getContext('2d');
+  const rec=new MediaRecorder(off.captureStream(exportFPS),{mimeType:'video/webm;codecs=vp9'});
+  const chunks=[];rec.ondataavailable=e=>chunks.push(e.data);rec.start();
+  const frames=expFrames();
+  for(let i=0;i<frames.length;i++){
+    setFrame(frames[i]);await new Promise(r=>setTimeout(r,10));setPct(i/frames.length*100);
+    const svgStr=buildExportSVG(sw,sh);
+    const img=new Image(),blob=new Blob([svgStr],{type:'image/svg+xml'}),url=URL.createObjectURL(blob);
+    await new Promise(res=>{img.onload=()=>{offCtx.clearRect(0,0,sw,sh);offCtx.drawImage(img,0,0);URL.revokeObjectURL(url);res();};img.src=url;});
+    await new Promise(r=>setTimeout(r,1000/exportFPS));
+  }
+  rec.stop();await new Promise(r=>rec.onstop=r);
+  const blob=new Blob(chunks,{type:'video/webm'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`hand_${exportFPS}fps.webm`;a.click();
+  hideOv();
+}
+document.getElementById('btn-esv').addEventListener('click',exportSVGFrames);
+document.getElementById('btn-evid').addEventListener('click',exportVideo);
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  buildFingerControls();
+  render();
+  drawTL();
+  // Seed one KF per track at frame 0
+  TRACK_DEFS.forEach(t=>{
+    document.getElementById('track-sel').value=t.id;
+    trackKFs[t.id]=[{frame:0,data:getSnapshot(t.id),easing:'ease'}];
+  });
+  document.getElementById('track-sel').value='pose';
+  drawTL();
+});
+window.addEventListener('resize',()=>{render();drawTL();});
+</script>
+</body>
+</html>
