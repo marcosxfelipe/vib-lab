@@ -1,5 +1,13 @@
 [
   {
+    "slug": "2026-lightwalker",
+    "title": "Lightwalker",
+    "date": "2026-11",
+    "description": "PWA de rotas guiadas por Munique a pé, de corrida ou de bike, com narração por proximidade e pontos de foto para quem gosta de arquitetura e história.",
+    "tags": ["map", "pwa", "audio", "svg"],
+    "status": "funcionando"
+  },
+  {
     "slug": "2026-radio-duna",
     "title": "Rádio Duna",
     "date": "2026-07",
