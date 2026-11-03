@@ -1,8 +1,8 @@
 {
   "name": "Lightwalker",
   "short_name": "Lightwalker",
-  "description": "Rotas guiadas por Munique a pé, de corrida ou de bike, com narração por proximidade e pontos de foto.",
-  "lang": "pt-BR",
+  "description": "Guided routes through Munich on foot, running or by bike, with proximity narration and photo spots.",
+  "lang": "en",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Lightwalker</title>
-<meta name="description" content="Rotas guiadas por Munique a pé, de corrida ou de bike, com narração por proximidade e pontos de foto.">
+<meta name="description" content="Guided routes through Munich on foot, running or by bike, with proximity narration and photo spots.">
 <meta name="theme-color" content="#FAF7F2">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -323,7 +323,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--accent);ou
 <body>
 
 <div id="app">
-  <div id="map" aria-label="Mapa de Munique">
+  <div id="map" aria-label="Map of Munich">
     <svg id="mapsvg" xmlns="http://www.w3.org/2000/svg"><g id="world"><g id="base"></g><g id="routes"></g></g></svg>
     <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
   </div>
@@ -333,29 +333,29 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--accent);ou
       <div class="tb-row">
         <div class="brand">
           <div class="brand-mark"><svg width="24" height="24" viewBox="0 0 64 64" aria-hidden="true"><path d="M12 42 A20 20 0 0 1 52 42 Z" fill="var(--on-grad)"/><path d="M18 42 C24 34 30 37 36 30 S46 22 48 22" fill="none" stroke="var(--g2)" stroke-width="4.5" stroke-linecap="round"/><rect x="4" y="46" width="56" height="6" rx="3" fill="var(--on-grad)"/></svg></div>
-          <div><div class="brand-name">lightwalker</div><div class="brand-city">München · olhe para cima</div></div>
+          <div><div class="brand-name">lightwalker</div><div class="brand-city">München · look up</div></div>
         </div>
-        <div class="seg" role="group" aria-label="Visualização">
-          <button id="tabMap" aria-pressed="true">Mapa</button>
-          <button id="tabList" aria-pressed="false">Lista</button>
+        <div class="seg" role="group" aria-label="View">
+          <button id="tabMap" aria-pressed="true">Map</button>
+          <button id="tabList" aria-pressed="false">List</button>
         </div>
       </div>
       <div class="tb-row">
-        <button type="button" class="light-chip" id="lightChip" aria-label="Luz de agora. Toque para pré-visualizar outros momentos do dia."></button>
+        <button type="button" class="light-chip" id="lightChip" aria-label="Current light. Tap to preview other times of day."></button>
       </div>
     </header>
     <section class="sheet" id="sheet">
-      <div class="sheet-head"><span class="eyebrow" id="sheetLbl">Rotas</span></div>
+      <div class="sheet-head"><span class="eyebrow" id="sheetLbl">Routes</span></div>
       <div class="cards" id="cards"></div>
     </section>
     <section id="listPanel" hidden>
       <div class="list-intro">
-        <span class="eyebrow">Munique para quem olha para cima</span>
-        <h2>Arquitetura, história e o melhor ângulo para a foto</h2>
+        <span class="eyebrow">Munich for people who look up</span>
+        <h2>Architecture, history and the best angle for the photo</h2>
         <a class="vl-back" href="../../">← vib-lab</a>
-        <p>Rotas a pé, de corrida ou de bike. A narração toca quando você chega perto de cada parada, e os pontos de foto aparecem no mapa com a direção para onde apontar.</p>
-        <div><div class="eyebrow" style="margin-bottom:8px">Como você vai</div><div class="modes flat" data-modebox role="group" aria-label="Modo"></div></div>
-        <div><div class="eyebrow" style="margin-bottom:8px">O que você quer ouvir</div><div class="lenses" data-lensbox></div></div>
+        <p>Routes on foot, running or by bike. Narration plays as you get close to each stop, and photo spots appear on the map with the direction to point your camera.</p>
+        <div><div class="eyebrow" style="margin-bottom:8px">How you’re going</div><div class="modes flat" data-modebox role="group" aria-label="Mode"></div></div>
+        <div><div class="eyebrow" style="margin-bottom:8px">What you want to hear</div><div class="lenses" data-lensbox></div></div>
       </div>
       <div class="list" id="list"></div>
     </section>
@@ -374,13 +374,13 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--accent);ou
       <div class="b-sub"><span id="bSub">—</span><span class="mono" id="bSubD"></span></div>
     </div>
     <div class="side-fabs">
-      <button class="fab" id="audioBtn" aria-label="Áudio ligado"></button>
-      <button class="fab" id="recenter" aria-label="Recentralizar" hidden><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>
+      <button class="fab" id="audioBtn" aria-label="Audio on"></button>
+      <button class="fab" id="recenter" aria-label="Recenter" hidden><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>
     </div>
     <div class="narr" id="narr" hidden>
       <div class="narr-head">
         <div>
-          <div class="eyebrow" id="narrKicker">Parada</div>
+          <div class="eyebrow" id="narrKicker">Stop</div>
           <div class="narr-title" id="narrTitle"></div>
           <div class="narr-de" id="narrDe"></div>
         </div>
@@ -389,21 +389,21 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--accent);ou
       <div class="narr-text" id="narrText"></div>
       <div class="narr-ctrl">
         <button class="btn btn-ghost" id="narrPlay"></button>
-        <button class="btn btn-primary" id="narrClose">Continuar rota</button>
+        <button class="btn btn-primary" id="narrClose">Continue route</button>
       </div>
     </div>
     <div class="navbar">
       <div class="nb-top">
         <div><b id="nbRemain">—</b><small id="nbEta">—</small></div>
-        <div style="text-align:right"><b id="nbStops" class="mono" style="font-size:16px">—</b><small id="nbStopsLbl">paradas</small></div>
+        <div style="text-align:right"><b id="nbStops" class="mono" style="font-size:16px">—</b><small id="nbStopsLbl">stops</small></div>
       </div>
       <div class="prog" id="prog"><div class="prog-fill" id="progFill"></div></div>
       <div class="nb-ctrl">
-        <button class="chip" id="simPlay" aria-label="Pausar simulação"></button>
-        <button class="chip" id="simSpeed" aria-label="Velocidade da simulação"><svg class="ico" viewBox="0 0 24 24"><path d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg><span class="sim-lbl" id="simLbl">8×</span></button>
-        <button class="chip end" id="endNav">Encerrar</button>
+        <button class="chip" id="simPlay" aria-label="Pause simulation"></button>
+        <button class="chip" id="simSpeed" aria-label="Simulation speed"><svg class="ico" viewBox="0 0 24 24"><path d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg><span class="sim-lbl" id="simLbl">8×</span></button>
+        <button class="chip end" id="endNav">End</button>
       </div>
-      <div class="notice"><i id="noticeDot"></i><span id="noticeTxt">Procurando GPS…</span></div>
+      <div class="notice"><i id="noticeDot"></i><span id="noticeTxt">Looking for GPS…</span></div>
     </div>
   </section>
 
@@ -481,232 +481,232 @@ const MAP={
 
 /* ================= landmarks ================= */
 const LM={
-karlstor:{name:'Karlstor',de:'Karlstor',style:'Gótico · neogótico',year:'1302',
- hist:'Mencionado pela primeira vez em 1302 como Neuhauser Tor, o Karlstor era uma das saídas da muralha medieval, em direção ao oeste. Em 1791 ganhou o nome atual, em homenagem ao príncipe-eleitor Karl Theodor.',
- arch:'A torre central foi destruída por uma explosão de pólvora em 1857. O que se vê hoje são as torres laterais e o arco, refeitos no século XIX em estilo neogótico.',
- curio:'Muitos moradores ainda chamam a praça em frente de Stachus, nome de uma antiga taverna, e não de Karlsplatz.',
- short:'Karlstor, o portão oeste da muralha medieval, mencionado já em 1302.'},
-michael:{name:'Igreja de São Miguel',de:'St. Michael',style:'Renascimento',year:'1597',
- hist:'A igreja foi construída pelos jesuítas entre 1583 e 1597, quando a Baviera se tornava um bastião da Contrarreforma católica. Na cripta repousam membros da família Wittelsbach, entre eles o rei Ludwig II.',
- arch:'É a maior igreja renascentista ao norte dos Alpes. A abóbada de berço, com cerca de vinte metros de vão, foi uma ousadia técnica para a época.',
- curio:'Durante a obra, a torre desabou, e o duque Wilhelm V decidiu aproveitar para ampliar ainda mais o projeto.',
- short:'Igreja de São Miguel, de 1597, a maior igreja renascentista ao norte dos Alpes.'},
-frauen:{name:'Frauenkirche',de:'Dom zu Unserer Lieben Frau',style:'Gótico tardio',year:'1488',
- hist:'A Frauenkirche foi erguida em cerca de vinte anos, entre 1468 e 1488, e virou o símbolo da cidade. Desde 1821 é a catedral da arquidiocese de Munique e Freising.',
- arch:'Toda em tijolo e quase sem ornamento na fachada, ela aposta na massa e na altura. As cúpulas em forma de cebola vieram por volta de 1525.',
- curio:'No piso da entrada há a marca de um pé. Segundo a lenda, é a pegada do diabo, que teria batido o pé de raiva ao perceber que foi enganado pelo construtor.',
- short:'Frauenkirche, as torres de quase cem metros que definem o horizonte de Munique.'},
-marien:{name:'Marienplatz',de:'Neues Rathaus',style:'Neogótico',year:'1158 · 1908',
- hist:'A Marienplatz é o centro da cidade desde a fundação, em 1158, e foi por séculos o mercado principal. A Coluna de Maria, de 1638, celebra a cidade poupada durante a Guerra dos Trinta Anos.',
- arch:'A Nova Prefeitura, construída entre 1867 e 1908, parece medieval, mas é neogótica: uma fachada enorme coberta de reis, santos e criaturas fantásticas.',
- curio:'O Glockenspiel toca todos os dias às 11h e ao meio-dia. As figuras encenam um torneio de cavaleiros e a dança dos tanoeiros, ligada à lenda do fim de uma epidemia de peste.',
- short:'Marienplatz, o coração da cidade desde 1158, com o Glockenspiel na torre da prefeitura.'},
-peter:{name:'Alter Peter',de:'St. Peter',style:'Gótico · barroco',year:'séc. XII',
- hist:'A Igreja de São Pedro é a paróquia mais antiga de Munique, com origens anteriores à própria cidade. Quase destruída na guerra, foi reconstruída com a ajuda dos moradores.',
- arch:'A torre tem cerca de 91 metros e pouco mais de trezentos degraus até o mirante, sem elevador.',
- curio:'Em dias de Föhn, o vento quente do sul, os Alpes parecem tão perto que dá para distinguir os picos lá de cima.',
- short:'Alter Peter, a igreja mais antiga da cidade, com mirante a quase cem metros.'},
-vikt:{name:'Viktualienmarkt',de:'Viktualienmarkt',style:'Mercado ao ar livre',year:'1807',
- hist:'O mercado surgiu em 1807, quando o comércio de alimentos saiu da Marienplatz, que já tinha ficado pequena para a cidade.',
- arch:'Aqui não há um grande edifício. O charme está nas bancas baixas e nas fontes dedicadas a comediantes e cantores populares de Munique, como Karl Valentin.',
- curio:'O Maibaum, o mastro azul e branco, traz figuras das profissões da cidade. No Biergarten ao lado, as cervejarias de Munique se revezam ao longo do ano.',
- short:'Viktualienmarkt, o mercado ao ar livre da cidade desde 1807.'},
-hofbrau:{name:'Hofbräuhaus',de:'Hofbräuhaus am Platzl',style:'Neorrenascimento',year:'1589 · 1896',
- hist:'A Hofbräuhaus nasceu em 1589 como cervejaria da corte, fundada pelo duque Wilhelm V, que não queria mais pagar caro pela cerveja vinda de fora.',
- arch:'O edifício atual é de 1896, em estilo neorrenascentista, com um grande salão abobadado pintado com motivos bávaros.',
- curio:'Alguns frequentadores fixos guardam a própria caneca num cofre trancado dentro do salão.',
- short:'Hofbräuhaus, a cervejaria da corte desde 1589.'},
-isartor:{name:'Isartor',de:'Isartor',style:'Gótico',year:'1337',
- hist:'Construído por volta de 1337, o portão guardava a estrada para o Isar e para o comércio de sal que vinha do leste.',
- arch:'É o único dos grandes portões da cidade que manteve a torre principal. O afresco da fachada mostra o imperador Ludwig, o Bávaro, voltando vitorioso da batalha de Mühldorf, de 1322.',
- curio:'Dentro da torre funciona um pequeno museu dedicado ao comediante Karl Valentin.',
- short:'Isartor, o portão leste de 1337, o único que manteve a torre principal.'},
-nat:{name:'Teatro Nacional',de:'Nationaltheater',style:'Neoclássico',year:'1818',
- hist:'Sede da Ópera Estatal da Baviera, o teatro foi inaugurado em 1818, pegou fogo poucos anos depois e foi reconstruído. Destruído de novo na guerra, reabriu em 1963 seguindo o desenho original.',
- arch:'A fachada imita um templo grego, com colunas coríntias e dois frontões sobrepostos.',
- curio:'Foi aqui que Richard Wagner estreou Tristão e Isolda, em 1865.',
- short:'Teatro Nacional, a ópera de Munique, reconstruída duas vezes.'},
-resid:{name:'Residenz',de:'Residenz München',style:'Renascimento ao neoclássico',year:'1508–1918',
- hist:'Por séculos, até 1918, a Residenz foi a casa e a sede do governo dos Wittelsbach.',
- arch:'É o maior palácio urbano da Alemanha, e cada ala é de uma época. Lá dentro fica o Antiquarium, o maior salão renascentista ao norte dos Alpes.',
- curio:'Toque o focinho dos leões de bronze diante dos portões: dá sorte, segundo os moradores, e por isso eles brilham tanto.',
- short:'Residenz, o palácio dos Wittelsbach, o maior palácio urbano da Alemanha.'},
-feld:{name:'Feldherrnhalle',de:'Feldherrnhalle',style:'Neoclássico',year:'1844',
- hist:'Erguida entre 1841 e 1844 em homenagem ao exército bávaro, a Feldherrnhalle foi palco do fim do golpe fracassado de Hitler, em 1923.',
- arch:'Friedrich von Gärtner seguiu de perto a Loggia dei Lanzi, de Florença, para fechar o eixo monumental da Ludwigstraße.',
- curio:'Quando o regime transformou o lugar em memorial, muitos moradores desviavam pela ruela de trás, a Viscardigasse, para evitar a saudação obrigatória.',
- short:'Feldherrnhalle, a loggia florentina que fecha a Ludwigstraße.'},
-theat:{name:'Theatinerkirche',de:'St. Kajetan',style:'Alto barroco',year:'1663–1768',
- hist:'A igreja foi prometida como agradecimento pelo nascimento do herdeiro Max Emanuel, em 1662, e começou a ser construída no ano seguinte.',
- arch:'Arquitetos italianos trouxeram o alto barroco romano para Munique. A fachada amarela só foi concluída um século depois, por François de Cuvilliés, e o interior é todo em estuque branco.',
- curio:'Na cripta estão sepultados vários membros da família real, entre eles Otto, o primeiro rei da Grécia moderna.',
- short:'Theatinerkirche, o barroco italiano em amarelo na Odeonsplatz.'},
-hofg:{name:'Hofgarten',de:'Hofgarten · Dianatempel',style:'Jardim renascentista',year:'1617',
- hist:'O jardim da corte foi criado entre 1613 e 1617 no estilo renascentista italiano.',
- arch:'No centro fica o Templo de Diana, um pavilhão com cúpula coroado pela estátua Tellus Bavarica. As arcadas em volta são decoradas com afrescos.',
- curio:'A cúpula do templo tem ótima acústica, e ao fim da tarde é comum encontrar músicos tocando ali.',
- short:'Hofgarten, o jardim renascentista da corte, de 1617.'},
-bsb:{name:'Biblioteca Estatal',de:'Bayerische Staatsbibliothek',style:'Rundbogenstil',year:'1843',
- hist:'A Biblioteca Estatal da Baviera, concluída em 1843, é uma das maiores bibliotecas de pesquisa da Europa.',
- arch:'Gärtner usou o Rundbogenstil, o estilo dos arcos redondos, inspirado nos palácios de Florença, numa fachada longa e ritmada.',
- curio:'As quatro estátuas na escadaria representam Tucídides, Homero, Aristóteles e Hipócrates.',
- short:'Biblioteca Estatal, uma das maiores bibliotecas de pesquisa da Europa.'},
-ludk:{name:'Ludwigskirche',de:'St. Ludwig',style:'Neorromânico',year:'1844',
- hist:'Construída entre 1829 e 1844, a Ludwigskirche é a igreja da universidade.',
- arch:'Atrás do altar está o Juízo Final de Peter von Cornelius, um dos maiores afrescos do mundo.',
- curio:'Olhe para o telhado: as telhas coloridas formam um padrão de losangos.',
- short:'Ludwigskirche, a igreja da universidade, com um dos maiores afrescos do mundo.'},
-sieges:{name:'Siegestor',de:'Siegestor',style:'Neoclássico',year:'1852',
- hist:'Concluído em 1852 em homenagem ao exército bávaro, o Siegestor foi muito danificado na guerra e restaurado só em parte, de propósito.',
- arch:'O modelo é o Arco de Constantino, em Roma, coroado por uma Bavaria numa quadriga puxada por leões.',
- curio:'No lado sul, a inscrição diz: dedicado à vitória, destruído pela guerra, um apelo à paz.',
- short:'Siegestor, o arco da vitória que virou um apelo à paz.'},
-karol:{name:'Karolinenplatz',de:'Obelisk',style:'Neoclássico',year:'1833',
- hist:'O obelisco de bronze, de 1833, lembra os cerca de trinta mil soldados bávaros mortos na campanha de Napoleão contra a Rússia, em 1812.',
- arch:'Leo von Klenze desenhou o obelisco no centro de uma praça circular que funciona como porta de entrada do bairro de Maxvorstadt.',
- curio:'A Brienner Straße fazia parte do antigo caminho dos príncipes entre a Residenz e o palácio de Nymphenburg.',
- short:'Karolinenplatz e seu obelisco de 1833.'},
-nsdok:{name:'Centro de Documentação',de:'NS-Dokumentationszentrum',style:'Contemporâneo',year:'2015',
- hist:'Inaugurado em 2015, o centro ocupa o terreno da antiga Casa Marrom, sede do partido nazista. Munique foi chamada de capital do movimento, e este bairro concentrava os prédios do partido.',
- arch:'O cubo branco, do escritório Georg Scheel Wetzel, contrasta de propósito com o neoclássico ao redor. Algumas janelas enquadram os prédios históricos do entorno.',
- curio:'A entrada é gratuita.',
- short:'Centro de Documentação sobre o Nacional-Socialismo, no lugar da antiga sede do partido.'},
-glypt:{name:'Gliptoteca',de:'Glyptothek',style:'Neoclássico',year:'1830',
- hist:'Primeiro museu público de Munique, foi construído entre 1816 e 1830 para a coleção de esculturas antigas de Ludwig I.',
- arch:'Klenze criou uma fachada de templo jônico sem janelas. A luz das salas entra pelo pátio interno.',
- curio:'A estrela da coleção é o Fauno Barberini, um sátiro adormecido de mais de dois mil anos.',
- short:'Gliptoteca, o primeiro museu público de Munique.'},
-propy:{name:'Propileus',de:'Propyläen',style:'Neoclássico',year:'1862',
- hist:'Concluídos em 1862, os Propileus celebram Otto, filho de Ludwig I, que se tornou o primeiro rei da Grécia moderna.',
- arch:'Inspirados na entrada da Acrópole de Atenas, fecham a Königsplatz a oeste, com colunas dóricas na fachada.',
- curio:'Os relevos mostram cenas da guerra de independência grega: um monumento que conta a história de dois países.',
- short:'Propileus, a porta de Atenas em plena Munique.'},
-lenb:{name:'Lenbachhaus',de:'Städtische Galerie im Lenbachhaus',style:'Villa neorrenascentista',year:'1891 · 2013',
- hist:'A villa foi casa e ateliê do pintor Franz von Lenbach no fim do século XIX. Hoje é o museu de arte da cidade.',
- arch:'Em 2013, o escritório de Norman Foster acrescentou um volume revestido de metal dourado que conversa com a villa amarela.',
- curio:'Abriga a maior coleção do mundo do grupo Der Blaue Reiter, com Kandinsky, Franz Marc e Gabriele Münter.',
- short:'Lenbachhaus, a villa amarela com a maior coleção do Blaue Reiter.'},
-altep:{name:'Alte Pinakothek',de:'Alte Pinakothek',style:'Neorrenascimento',year:'1836',
- hist:'Concluída em 1836, é uma das galerias de arte mais antigas do mundo, com obras de Dürer, Rafael, Rembrandt e Rubens.',
- arch:'Depois da guerra, Hans Döllgast fechou os buracos das bombas com tijolo aparente, deixando a ferida visível em vez de escondê-la.',
- curio:'Os remendos já foram polêmicos. Hoje são vistos como uma obra de arquitetura em si.',
- short:'Alte Pinakothek, uma das galerias mais antigas do mundo.'},
-pdm:{name:'Pinakothek der Moderne',de:'Pinakothek der Moderne',style:'Contemporâneo',year:'2002',
- hist:'Inaugurada em 2002, reúne quatro museus sob o mesmo teto: arte moderna, design, arquitetura e desenho.',
- arch:'Stephan Braunfels organizou tudo em volta de uma rotunda central, iluminada por uma grande cúpula de vidro.',
- curio:'Na coleção de design há carros, computadores e cadeiras famosas expostos como obras de arte.',
- short:'Pinakothek der Moderne, quatro museus em volta de uma rotunda de luz.'},
-dm:{name:'Deutsches Museum',de:'Deutsches Museum',style:'Museu · ilha',year:'1903',
- hist:'Fundado em 1903 pelo engenheiro Oskar von Miller, é um dos maiores museus de ciência e tecnologia do mundo.',
- arch:'O prédio ocupa quase toda a Ilha dos Museus, entre dois braços do Isar. A torre mostra, além das horas, a pressão do ar, a umidade e a temperatura.',
- curio:'Lá dentro há aviões, barcos e até uma mina reconstruída no subsolo.',
- short:'Deutsches Museum, um dos maiores museus de ciência do mundo, numa ilha do Isar.'},
+karlstor:{name:'Karlstor',de:'Karlstor',style:'Gothic · Gothic Revival',year:'1302',
+ hist:'First mentioned in 1302 as the Neuhauser Tor, the Karlstor was one of the exits through the medieval wall, facing west. In 1791 it got its current name, in honor of Elector Karl Theodor.',
+ arch:'The central tower was destroyed by a gunpowder explosion in 1857. What you see today are the side towers and the arch, rebuilt in the 19th century in Gothic Revival style.',
+ curio:'Many locals still call the square in front Stachus, after an old tavern, rather than Karlsplatz.',
+ short:'Karlstor, the west gate of the medieval wall, first mentioned in 1302.'},
+michael:{name:'St. Michael’s Church',de:'St. Michael',style:'Renaissance',year:'1597',
+ hist:'The Jesuits built the church between 1583 and 1597, as Bavaria became a stronghold of the Catholic Counter-Reformation. Members of the Wittelsbach family rest in the crypt, among them King Ludwig II.',
+ arch:'It is the largest Renaissance church north of the Alps. The barrel vault, spanning about twenty meters, was a bold piece of engineering for its time.',
+ curio:'During construction the tower collapsed, and Duke Wilhelm V took the chance to make the project even bigger.',
+ short:'St. Michael’s, from 1597, the largest Renaissance church north of the Alps.'},
+frauen:{name:'Frauenkirche',de:'Dom zu Unserer Lieben Frau',style:'Late Gothic',year:'1488',
+ hist:'The Frauenkirche went up in about twenty years, between 1468 and 1488, and became the symbol of the city. Since 1821 it has been the cathedral of the Archdiocese of Munich and Freising.',
+ arch:'Built entirely of brick, with almost no ornament on the facade, it relies on mass and height. The onion domes came around 1525.',
+ curio:'There is a footprint in the floor at the entrance. Legend says it belongs to the devil, who stamped in rage when he realized the builder had tricked him.',
+ short:'Frauenkirche, the nearly hundred-meter towers that define the Munich skyline.'},
+marien:{name:'Marienplatz',de:'Neues Rathaus',style:'Gothic Revival',year:'1158 · 1908',
+ hist:'Marienplatz has been the center of the city since its founding in 1158, and for centuries it was the main market. The Mary Column, from 1638, celebrates the city being spared during the Thirty Years’ War.',
+ arch:'The New Town Hall, built between 1867 and 1908, looks medieval but is Gothic Revival: a huge facade covered in kings, saints and fantastic creatures.',
+ curio:'The Glockenspiel plays every day at 11 am and noon. The figures act out a knights’ tournament and the coopers’ dance, tied to the legend of the end of a plague.',
+ short:'Marienplatz, the heart of the city since 1158, with the Glockenspiel in the town hall tower.'},
+peter:{name:'Alter Peter',de:'St. Peter',style:'Gothic · Baroque',year:'12th c.',
+ hist:'St. Peter’s is the oldest parish in Munich, with origins older than the city itself. Almost destroyed in the war, it was rebuilt with help from the residents.',
+ arch:'The tower is about 91 meters tall, with a little over three hundred steps to the viewing platform and no elevator.',
+ curio:'On Föhn days, when the warm south wind blows, the Alps seem so close that you can pick out the peaks from the top.',
+ short:'Alter Peter, the city’s oldest church, with a lookout almost a hundred meters up.'},
+vikt:{name:'Viktualienmarkt',de:'Viktualienmarkt',style:'Open-air market',year:'1807',
+ hist:'The market began in 1807, when the food trade moved out of Marienplatz, which had grown too small for the city.',
+ arch:'There is no grand building here. The charm is in the low stalls and the fountains dedicated to Munich comedians and folk singers, such as Karl Valentin.',
+ curio:'The blue-and-white maypole carries figures of the city’s trades. At the beer garden next door, Munich’s breweries take turns throughout the year.',
+ short:'Viktualienmarkt, the city’s open-air market since 1807.'},
+hofbrau:{name:'Hofbräuhaus',de:'Hofbräuhaus am Platzl',style:'Neo-Renaissance',year:'1589 · 1896',
+ hist:'The Hofbräuhaus was founded in 1589 as the court brewery by Duke Wilhelm V, who no longer wanted to pay high prices for beer brought in from elsewhere.',
+ arch:'The current building dates from 1896, in Neo-Renaissance style, with a large vaulted hall painted with Bavarian motifs.',
+ curio:'Some regulars keep their own beer mug in a locked safe inside the hall.',
+ short:'Hofbräuhaus, the court brewery since 1589.'},
+isartor:{name:'Isartor',de:'Isartor',style:'Gothic',year:'1337',
+ hist:'Built around 1337, the gate guarded the road to the Isar and the salt trade coming from the east.',
+ arch:'It is the only one of the city’s great gates that kept its main tower. The fresco on the facade shows Emperor Ludwig the Bavarian returning victorious from the Battle of Mühldorf in 1322.',
+ curio:'Inside the tower is a small museum dedicated to the comedian Karl Valentin.',
+ short:'Isartor, the east gate from 1337, the only one that kept its main tower.'},
+nat:{name:'National Theatre',de:'Nationaltheater',style:'Neoclassical',year:'1818',
+ hist:'Home of the Bavarian State Opera, the theatre opened in 1818, burned down a few years later and was rebuilt. Destroyed again in the war, it reopened in 1963 following the original design.',
+ arch:'The facade imitates a Greek temple, with Corinthian columns and two stacked pediments.',
+ curio:'This is where Richard Wagner premiered Tristan und Isolde, in 1865.',
+ short:'National Theatre, Munich’s opera house, rebuilt twice.'},
+resid:{name:'Residenz',de:'Residenz München',style:'Renaissance to Neoclassical',year:'1508–1918',
+ hist:'For centuries, until 1918, the Residenz was the home and seat of government of the Wittelsbachs.',
+ arch:'It is the largest city palace in Germany, and each wing comes from a different era. Inside is the Antiquarium, the largest Renaissance hall north of the Alps.',
+ curio:'Rub the snouts of the bronze lions in front of the gates: locals say it brings luck, which is why they shine so much.',
+ short:'Residenz, the Wittelsbach palace, the largest city palace in Germany.'},
+feld:{name:'Feldherrnhalle',de:'Feldherrnhalle',style:'Neoclassical',year:'1844',
+ hist:'Built between 1841 and 1844 to honor the Bavarian army, the Feldherrnhalle was where Hitler’s failed coup ended in 1923.',
+ arch:'Friedrich von Gärtner closely followed the Loggia dei Lanzi in Florence to close off the monumental axis of Ludwigstraße.',
+ curio:'When the regime turned the site into a memorial, many locals detoured through the back alley, Viscardigasse, to avoid the mandatory salute.',
+ short:'Feldherrnhalle, the Florentine loggia at the end of Ludwigstraße.'},
+theat:{name:'Theatinerkirche',de:'St. Kajetan',style:'High Baroque',year:'1663–1768',
+ hist:'The church was vowed in thanks for the birth of the heir Max Emanuel in 1662, and construction began the following year.',
+ arch:'Italian architects brought Roman High Baroque to Munich. The yellow facade was only finished a century later, by François de Cuvilliés, and the interior is all white stucco.',
+ curio:'Several members of the royal family are buried in the crypt, among them Otto, the first king of modern Greece.',
+ short:'Theatinerkirche, Italian Baroque in yellow on Odeonsplatz.'},
+hofg:{name:'Hofgarten',de:'Hofgarten · Dianatempel',style:'Renaissance garden',year:'1617',
+ hist:'The court garden was laid out between 1613 and 1617 in the Italian Renaissance style.',
+ arch:'At its center is the Temple of Diana, a domed pavilion crowned by the statue Tellus Bavarica. The surrounding arcades are decorated with frescoes.',
+ curio:'The temple’s dome has great acoustics, and in the late afternoon you often find musicians playing there.',
+ short:'Hofgarten, the Renaissance court garden from 1617.'},
+bsb:{name:'State Library',de:'Bayerische Staatsbibliothek',style:'Rundbogenstil',year:'1843',
+ hist:'The Bavarian State Library, completed in 1843, is one of the largest research libraries in Europe.',
+ arch:'Gärtner used the Rundbogenstil, the round-arch style inspired by Florentine palaces, on a long, rhythmic facade.',
+ curio:'The four statues on the staircase represent Thucydides, Homer, Aristotle and Hippocrates.',
+ short:'State Library, one of the largest research libraries in Europe.'},
+ludk:{name:'Ludwigskirche',de:'St. Ludwig',style:'Romanesque Revival',year:'1844',
+ hist:'Built between 1829 and 1844, the Ludwigskirche is the university church.',
+ arch:'Behind the altar is Peter von Cornelius’s Last Judgment, one of the largest frescoes in the world.',
+ curio:'Look at the roof: the colored tiles form a diamond pattern.',
+ short:'Ludwigskirche, the university church, with one of the largest frescoes in the world.'},
+sieges:{name:'Siegestor',de:'Siegestor',style:'Neoclassical',year:'1852',
+ hist:'Completed in 1852 to honor the Bavarian army, the Siegestor was badly damaged in the war and deliberately only partly restored.',
+ arch:'Its model is the Arch of Constantine in Rome, crowned by a Bavaria on a chariot drawn by lions.',
+ curio:'On the south side, the inscription reads: dedicated to victory, destroyed by war, a call for peace.',
+ short:'Siegestor, the victory arch that became a call for peace.'},
+karol:{name:'Karolinenplatz',de:'Obelisk',style:'Neoclassical',year:'1833',
+ hist:'The bronze obelisk, from 1833, remembers the roughly thirty thousand Bavarian soldiers who died in Napoleon’s campaign against Russia in 1812.',
+ arch:'Leo von Klenze placed the obelisk at the center of a circular square that works as the gateway to the Maxvorstadt district.',
+ curio:'Brienner Straße was part of the old princes’ road between the Residenz and Nymphenburg Palace.',
+ short:'Karolinenplatz and its obelisk from 1833.'},
+nsdok:{name:'Documentation Centre',de:'NS-Dokumentationszentrum',style:'Contemporary',year:'2015',
+ hist:'Opened in 2015, the centre stands on the site of the former Brown House, headquarters of the Nazi party. Munich was called the capital of the movement, and this district held the party’s buildings.',
+ arch:'The white cube, by Georg Scheel Wetzel Architects, deliberately contrasts with the Neoclassical surroundings. Some windows frame the historic buildings nearby.',
+ curio:'Admission is free.',
+ short:'Documentation Centre for the History of National Socialism, on the site of the former party headquarters.'},
+glypt:{name:'Glyptothek',de:'Glyptothek',style:'Neoclassical',year:'1830',
+ hist:'Munich’s first public museum, it was built between 1816 and 1830 for Ludwig I’s collection of ancient sculpture.',
+ arch:'Klenze designed a windowless Ionic temple facade. Light reaches the galleries from the inner courtyard.',
+ curio:'The star of the collection is the Barberini Faun, a sleeping satyr more than two thousand years old.',
+ short:'Glyptothek, Munich’s first public museum.'},
+propy:{name:'Propylaea',de:'Propyläen',style:'Neoclassical',year:'1862',
+ hist:'Completed in 1862, the Propylaea celebrate Otto, son of Ludwig I, who became the first king of modern Greece.',
+ arch:'Inspired by the entrance to the Acropolis in Athens, they close Königsplatz to the west, with Doric columns on the facade.',
+ curio:'The reliefs show scenes from the Greek War of Independence: a monument that tells the story of two countries.',
+ short:'Propylaea, the gate of Athens in the middle of Munich.'},
+lenb:{name:'Lenbachhaus',de:'Städtische Galerie im Lenbachhaus',style:'Neo-Renaissance villa',year:'1891 · 2013',
+ hist:'The villa was the home and studio of the painter Franz von Lenbach in the late 19th century. Today it is the city’s art museum.',
+ arch:'In 2013, Norman Foster’s office added a volume clad in golden metal that talks to the yellow villa.',
+ curio:'It holds the world’s largest collection of the Der Blaue Reiter group, with Kandinsky, Franz Marc and Gabriele Münter.',
+ short:'Lenbachhaus, the yellow villa with the largest Blaue Reiter collection.'},
+altep:{name:'Alte Pinakothek',de:'Alte Pinakothek',style:'Neo-Renaissance',year:'1836',
+ hist:'Completed in 1836, it is one of the oldest art galleries in the world, with works by Dürer, Raphael, Rembrandt and Rubens.',
+ arch:'After the war, Hans Döllgast filled the bomb holes with bare brick, leaving the wound visible instead of hiding it.',
+ curio:'The patches were once controversial. Today they are seen as a work of architecture in their own right.',
+ short:'Alte Pinakothek, one of the oldest galleries in the world.'},
+pdm:{name:'Pinakothek der Moderne',de:'Pinakothek der Moderne',style:'Contemporary',year:'2002',
+ hist:'Opened in 2002, it brings four museums under one roof: modern art, design, architecture and drawing.',
+ arch:'Stephan Braunfels organized everything around a central rotunda, lit by a large glass dome.',
+ curio:'The design collection shows cars, computers and famous chairs as works of art.',
+ short:'Pinakothek der Moderne, four museums around a rotunda of light.'},
+dm:{name:'Deutsches Museum',de:'Deutsches Museum',style:'Museum · island',year:'1903',
+ hist:'Founded in 1903 by the engineer Oskar von Miller, it is one of the largest science and technology museums in the world.',
+ arch:'The building takes up almost all of Museum Island, between two arms of the Isar. Besides the time, the tower shows air pressure, humidity and temperature.',
+ curio:'Inside there are planes, boats and even a reconstructed mine in the basement.',
+ short:'Deutsches Museum, one of the largest science museums in the world, on an island in the Isar.'},
 volks:{name:'Müller’sches Volksbad',de:'Müller’sches Volksbad',style:'Art Nouveau',year:'1901',
- hist:'Inaugurada em 1901, a piscina foi doada à cidade pelo engenheiro Karl Müller, numa época em que poucas casas tinham banheiro.',
- arch:'O arquiteto Carl Hocheder misturou barroco e Jugendstil, a Art Nouveau alemã, nas abóbadas, na torre e nos detalhes de ferro e azulejo.',
- curio:'Ainda funciona: dá para nadar sob as abóbadas originais.',
- short:'Müller’sches Volksbad, a piscina Art Nouveau de 1901.'},
-maxim:{name:'Maximilianeum',de:'Maximilianeum',style:'Estilo Maximiliano',year:'1874',
- hist:'Encomendado pelo rei Maximiliano II e concluído em 1874, abriga desde 1949 o parlamento da Baviera.',
- arch:'Friedrich Bürklein misturou arcos góticos e renascentistas no chamado estilo Maximiliano, inventado para ser um estilo novo e bávaro.',
- curio:'O prédio também abriga uma fundação que oferece moradia a estudantes de grande talento.',
- short:'Maximilianeum, o parlamento da Baviera no alto da margem do Isar.'},
-engel:{name:'Anjo da Paz',de:'Friedensengel',style:'Neoclássico',year:'1899',
- hist:'Inaugurado em 1899, celebra os vinte e cinco anos de paz depois da guerra franco-prussiana de 1870 e 1871.',
- arch:'A figura dourada foi inspirada na Nike de Paionios. O terraço tem mosaicos e uma fonte em cascata.',
- curio:'Daqui, a Prinzregentenstraße desce em linha reta até o centro.',
- short:'Anjo da Paz, a figura dourada sobre o Isar, de 1899.'},
-eisbach:{name:'Onda do Eisbach',de:'Eisbachwelle',style:'Paisagem urbana',year:'anos 1970',
- hist:'Surfistas usam esta onda estacionária no meio da cidade desde os anos 1970.',
- arch:'A onda se forma num degrau do leito do riacho, logo depois da ponte.',
- curio:'A água é gelada e a correnteza é forte: a onda é só para surfistas experientes.',
- short:'A onda do Eisbach, surfe a centenas de quilômetros do mar.'},
-hdk:{name:'Haus der Kunst',de:'Haus der Kunst',style:'Arquitetura nazista',year:'1937',
- hist:'Construído entre 1933 e 1937 como o primeiro grande prédio de propaganda do regime nazista.',
- arch:'A colunata pesada, de Paul Ludwig Troost, é típica da arquitetura oficial do período.',
- curio:'Depois da guerra, o prédio passou a receber justamente a arte que o regime havia perseguido. Hoje é um museu de arte contemporânea.',
- short:'Haus der Kunst, um prédio de propaganda que virou museu de arte contemporânea.'},
-monop:{name:'Monopteros',de:'Monopteros',style:'Neoclássico',year:'1836',
- hist:'O Englischer Garten foi criado em 1789 e é um dos maiores parques urbanos do mundo.',
- arch:'Leo von Klenze desenhou este pequeno templo grego, concluído em 1836, sobre uma colina artificial.',
- curio:'É um dos melhores pontos para ver as torres da cidade surgindo sobre as árvores.',
- short:'Monopteros, o templo grego sobre a colina do Englischer Garten.'},
-chin:{name:'Torre Chinesa',de:'Chinesischer Turm',style:'Pagode de madeira',year:'1790',
- hist:'Erguida em 1790, a torre original queimou em 1944 e foi reconstruída fielmente em 1952.',
- arch:'São 25 metros de madeira em vários andares, inspirados nos pagodes que estavam na moda nos jardins europeus.',
- curio:'Ao redor fica um dos maiores Biergärten de Munique, com milhares de lugares.',
- short:'Torre Chinesa, o pagode de madeira de 1790 no meio do parque.'},
-klein:{name:'Kleinhesseloher See',de:'Kleinhesseloher See',style:'Jardim paisagístico',year:'séc. XIX',
- hist:'O lago foi criado no início do século XIX, quando o Englischer Garten foi ampliado para o norte.',
- arch:'As ilhas e as margens irregulares seguem o ideal do jardim inglês, que imita uma natureza espontânea.',
- curio:'À beira d’água fica o Seehaus, com Biergarten e aluguel de barquinhos no verão.',
- short:'Kleinhesseloher See, o lago do Englischer Garten.'}
+ hist:'Opened in 1901, the pool was donated to the city by the engineer Karl Müller, at a time when few homes had a bathroom.',
+ arch:'The architect Carl Hocheder mixed Baroque and Jugendstil, the German Art Nouveau, in the vaults, the tower and the iron and tile details.',
+ curio:'It is still open: you can swim under the original vaults.',
+ short:'Müller’sches Volksbad, the Art Nouveau pool from 1901.'},
+maxim:{name:'Maximilianeum',de:'Maximilianeum',style:'Maximilian style',year:'1874',
+ hist:'Commissioned by King Maximilian II and completed in 1874, it has housed the Bavarian parliament since 1949.',
+ arch:'Friedrich Bürklein mixed Gothic and Renaissance arches in the so-called Maximilian style, invented to be a new, Bavarian style.',
+ curio:'The building also houses a foundation that provides housing for highly gifted students.',
+ short:'Maximilianeum, the Bavarian parliament high on the bank of the Isar.'},
+engel:{name:'Angel of Peace',de:'Friedensengel',style:'Neoclassical',year:'1899',
+ hist:'Unveiled in 1899, it celebrates twenty-five years of peace after the Franco-Prussian War of 1870 and 1871.',
+ arch:'The golden figure was inspired by the Nike of Paionios. The terrace has mosaics and a cascading fountain.',
+ curio:'From here, Prinzregentenstraße runs in a straight line down to the center.',
+ short:'Angel of Peace, the golden figure above the Isar, from 1899.'},
+eisbach:{name:'Eisbach Wave',de:'Eisbachwelle',style:'Urban landscape',year:'1970s',
+ hist:'Surfers have been riding this standing wave in the middle of the city since the 1970s.',
+ arch:'The wave forms on a step in the creek bed, just past the bridge.',
+ curio:'The water is freezing and the current is strong: the wave is for experienced surfers only.',
+ short:'The Eisbach wave, surfing hundreds of kilometers from the sea.'},
+hdk:{name:'Haus der Kunst',de:'Haus der Kunst',style:'Nazi architecture',year:'1937',
+ hist:'Built between 1933 and 1937 as the Nazi regime’s first major propaganda building.',
+ arch:'The heavy colonnade, by Paul Ludwig Troost, is typical of the official architecture of the period.',
+ curio:'After the war, the building began to show exactly the art the regime had persecuted. Today it is a museum of contemporary art.',
+ short:'Haus der Kunst, a propaganda building turned contemporary art museum.'},
+monop:{name:'Monopteros',de:'Monopteros',style:'Neoclassical',year:'1836',
+ hist:'The Englischer Garten was created in 1789 and is one of the largest urban parks in the world.',
+ arch:'Leo von Klenze designed this small Greek temple, completed in 1836, on top of an artificial hill.',
+ curio:'It is one of the best spots to watch the city’s towers rise above the trees.',
+ short:'Monopteros, the Greek temple on the hill in the Englischer Garten.'},
+chin:{name:'Chinese Tower',de:'Chinesischer Turm',style:'Wooden pagoda',year:'1790',
+ hist:'Built in 1790, the original tower burned in 1944 and was faithfully rebuilt in 1952.',
+ arch:'It is 25 meters of wood over several stories, inspired by the pagodas that were fashionable in European gardens.',
+ curio:'Around it is one of Munich’s largest beer gardens, with thousands of seats.',
+ short:'Chinese Tower, the wooden pagoda from 1790 in the middle of the park.'},
+klein:{name:'Kleinhesseloher See',de:'Kleinhesseloher See',style:'Landscape garden',year:'19th c.',
+ hist:'The lake was created in the early 19th century, when the Englischer Garten was extended to the north.',
+ arch:'The islands and irregular shores follow the ideal of the English garden, which imitates a spontaneous nature.',
+ curio:'By the water is the Seehaus, with a beer garden and rowboat rental in summer.',
+ short:'Kleinhesseloher See, the lake of the Englischer Garten.'}
 };
 
 /* ================= photo spots ================= */
 const SPOTS={
- ps_frauen:{at:[48.13815,11.57220],lm:'frauen',lens:'24 mm',light:'Tarde',title:'Frauenkirche na vertical',tip:'Da esquina da Augustinerstraße, enquadre as duas torres na vertical. À tarde o sol bate na fachada oeste.'},
- ps_peter:{at:[48.13650,11.57590],lm:'frauen',lens:'70–200 mm',light:'Manhã',title:'Do mirante do Alter Peter',tip:'Lá de cima, a tele comprime a prefeitura e as torres da Frauenkirche. De manhã a luz vem do leste, às suas costas.'},
- ps_vikt:{at:[48.13480,11.57680],lm:'peter',lens:'35 mm',light:'Qualquer hora',title:'Maibaum e Alter Peter',tip:'Mastro azul e branco em primeiro plano e a torre do Alter Peter ao fundo, num enquadramento vertical.'},
- ps_theat:{at:[48.14235,11.57790],lm:'theat',lens:'24 mm',light:'Fim da tarde',title:'O amarelo da Theatinerkirche',tip:'Do centro da Odeonsplatz. No fim da tarde, o amarelo da fachada fica quase laranja.'},
- ps_feld:{at:[48.14370,11.57820],lm:'feld',lens:'50 mm',light:'Hora azul',title:'O fim do eixo',tip:'Da calçada da Ludwigstraße, alinhe a Feldherrnhalle no fim da avenida. Na hora azul, a loggia acende.'},
- ps_sieg:{at:[48.15120,11.58170],lm:'sieges',lens:'35 mm',light:'Meio-dia',title:'Simetria do Siegestor',tip:'Do lado sul, centralize o arco e explore a simetria. A inscrição de paz fica nesta face.'},
- ps_konig:{at:[48.14570,11.56640],lm:'propy',lens:'35 mm',light:'Pôr do sol',title:'Silhueta dos Propileus',tip:'Do lado leste da Königsplatz, o sol se põe atrás do portão: silhueta e céu colorido.'},
- ps_altep:{at:[48.14765,11.57000],lm:'altep',lens:'50 mm',light:'Luz lateral',title:'As cicatrizes de Döllgast',tip:'Aproxime-se dos remendos de tijolo. A luz lateral realça a textura entre o original e o reparo.'},
- ps_pdm:{at:[48.14710,11.57210],up:true,lens:'16 mm',light:'Qualquer hora',title:'Rotunda de luz',tip:'Dentro da rotunda, aponte a câmera para cima e centralize a cúpula para uma simetria perfeita.'},
- ps_dm:{at:[48.13180,11.58380],lm:'dm',lens:'24 mm',light:'Manhã',title:'Museu sobre o rio',tip:'Da ponte Ludwig, com o Isar em primeiro plano e a torre do museu ao fundo.'},
- ps_max:{at:[48.13720,11.59070],lm:'maxim',lens:'50 mm',light:'Pôr do sol',title:'Maximilianeum dourado',tip:'Da ponte Maximilian, com o rio em primeiro plano. No pôr do sol, a fachada virada para oeste fica dourada.'},
- ps_engel:{at:[48.14360,11.59380],lm:'engel',lens:'35 mm',light:'Hora azul',title:'Escadaria do Anjo',tip:'Da ponte Luitpold, enquadre a escadaria e a coluna. Na hora azul, o anjo dourado se destaca no céu.'},
- ps_eis:{at:[48.14350,11.58760],tgt:[48.14400,11.58800],lens:'70–200 mm',light:'Qualquer hora',title:'Surfista congelado',tip:'Da ponte, use 1/1000 s ou mais rápido para congelar o surfista e os respingos.'},
- ps_mono:{at:[48.14970,11.58750],lm:'frauen',lens:'85 mm',light:'Pôr do sol',title:'Torres sobre as árvores',tip:'Do alto da colina, uma tele curta traz as torres da cidade sobre as árvores. No inverno, sem folhas, o horizonte fica limpo.'}
+ ps_frauen:{at:[48.13815,11.57220],lm:'frauen',lens:'24 mm',light:'Afternoon',title:'Frauenkirche, vertical',tip:'From the corner of Augustinerstraße, frame both towers vertically. In the afternoon the sun hits the west facade.'},
+ ps_peter:{at:[48.13650,11.57590],lm:'frauen',lens:'70–200 mm',light:'Morning',title:'From the Alter Peter lookout',tip:'From the top, a telephoto compresses the town hall and the Frauenkirche towers. In the morning the light comes from the east, behind you.'},
+ ps_vikt:{at:[48.13480,11.57680],lm:'peter',lens:'35 mm',light:'Any time',title:'Maypole and Alter Peter',tip:'Blue-and-white maypole in the foreground and the Alter Peter tower behind, in a vertical frame.'},
+ ps_theat:{at:[48.14235,11.57790],lm:'theat',lens:'24 mm',light:'Late afternoon',title:'Theatinerkirche yellow',tip:'From the middle of Odeonsplatz. In the late afternoon the yellow facade turns almost orange.'},
+ ps_feld:{at:[48.14370,11.57820],lm:'feld',lens:'50 mm',light:'Blue hour',title:'End of the axis',tip:'From the Ludwigstraße sidewalk, line up the Feldherrnhalle at the end of the avenue. At blue hour, the loggia lights up.'},
+ ps_sieg:{at:[48.15120,11.58170],lm:'sieges',lens:'35 mm',light:'Midday',title:'Siegestor symmetry',tip:'From the south side, center the arch and play with symmetry. The peace inscription is on this face.'},
+ ps_konig:{at:[48.14570,11.56640],lm:'propy',lens:'35 mm',light:'Sunset',title:'Propylaea silhouette',tip:'From the east side of Königsplatz, the sun sets behind the gate: silhouette and colored sky.'},
+ ps_altep:{at:[48.14765,11.57000],lm:'altep',lens:'50 mm',light:'Side light',title:'Döllgast’s scars',tip:'Get close to the brick patches. Side light brings out the texture between the original and the repair.'},
+ ps_pdm:{at:[48.14710,11.57210],up:true,lens:'16 mm',light:'Any time',title:'Rotunda of light',tip:'Inside the rotunda, point the camera up and center the dome for perfect symmetry.'},
+ ps_dm:{at:[48.13180,11.58380],lm:'dm',lens:'24 mm',light:'Morning',title:'Museum on the river',tip:'From Ludwigsbrücke, with the Isar in the foreground and the museum tower behind.'},
+ ps_max:{at:[48.13720,11.59070],lm:'maxim',lens:'50 mm',light:'Sunset',title:'Golden Maximilianeum',tip:'From Maximiliansbrücke, with the river in the foreground. At sunset, the west-facing facade turns gold.'},
+ ps_engel:{at:[48.14360,11.59380],lm:'engel',lens:'35 mm',light:'Blue hour',title:'The Angel’s stairs',tip:'From Luitpoldbrücke, frame the stairs and the column. At blue hour, the golden angel stands out against the sky.'},
+ ps_eis:{at:[48.14350,11.58760],tgt:[48.14400,11.58800],lens:'70–200 mm',light:'Any time',title:'Frozen surfer',tip:'From the bridge, use 1/1000 s or faster to freeze the surfer and the spray.'},
+ ps_mono:{at:[48.14970,11.58750],lm:'frauen',lens:'85 mm',light:'Sunset',title:'Towers above the trees',tip:'From the top of the hill, a short telephoto brings the city towers above the trees. In winter, without leaves, the skyline is clean.'}
 };
 
 /* ================= routes ================= */
 const MODES={
- walk:{label:'A pé',verb:'caminhada',cta:'Começar caminhada',speed:1.25,sim:1.35,trigger:25,stopMin:7,mult:8,unit:'a pé'},
- run:{label:'Corrida',verb:'corrida',cta:'Começar corrida',speed:2.9,sim:2.9,trigger:45,stopMin:0,mult:4,unit:'correndo'},
- bike:{label:'Bike',verb:'pedalada',cta:'Começar pedalada',speed:4.4,sim:4.4,trigger:70,stopMin:2,mult:3,unit:'de bike'}
+ walk:{label:'Walk',verb:'walk',cta:'Start walk',speed:1.25,sim:1.35,trigger:25,stopMin:7,mult:8,unit:'walking'},
+ run:{label:'Run',verb:'run',cta:'Start run',speed:2.9,sim:2.9,trigger:45,stopMin:0,mult:4,unit:'running'},
+ bike:{label:'Bike',verb:'ride',cta:'Start ride',speed:4.4,sim:4.4,trigger:70,stopMin:2,mult:3,unit:'by bike'}
 };
-const LENSES=[['hist','História'],['arch','Arquitetura'],['curio','Curiosidades'],['foto','Fotografia']];
-const SUIT={ideal:'Ideal',ok:'Bom',avoid:'Evite'};
+const LENSES=[['hist','History'],['arch','Architecture'],['curio','Trivia'],['foto','Photography']];
+const SUIT={ideal:'Ideal',ok:'Good',avoid:'Avoid'};
 const ROUTES=[
-{id:'t1',code:'T1',color:'--r1',name:'Coração da Altstadt',sub:'Portões, torres e mercados',lens:'História',
- about:'Atravesse a cidade medieval de ponta a ponta, do portão oeste ao portão leste, pela antiga rota do sal. No caminho estão as duas torres que definem o horizonte de Munique, a praça onde a cidade nasceu e o mercado onde os moradores compram há dois séculos.',
- hl:[['Glockenspiel','Às 11h e ao meio-dia na Marienplatz'],['Pegada do diabo','No piso da Frauenkirche'],['Mirante','Alpes vistos do Alter Peter']],
- modes:{walk:['ideal','Quase toda em zona de pedestres.'],run:['ok','Melhor bem cedo, antes das lojas abrirem.'],bike:['avoid','Zona de pedestres: é preciso empurrar a bike na maior parte do trajeto.']},
- facts:[['Melhor horário','Manhã, para chegar à Marienplatz antes das 11h'],['Pausa sugerida','Viktualienmarkt, para um lanche'],['Acessibilidade','Plano, quase todo sem carros']],
+{id:'t1',code:'T1',color:'--r1',name:'Heart of the Altstadt',sub:'Gates, towers and markets',lens:'History',
+ about:'Cross the medieval city end to end, from the west gate to the east gate, along the old salt road. On the way are the two towers that define the Munich skyline, the square where the city was born and the market where locals have shopped for two centuries.',
+ hl:[['Glockenspiel','At 11 am and noon on Marienplatz'],['Devil’s footprint','In the Frauenkirche floor'],['Lookout','The Alps seen from Alter Peter']],
+ modes:{walk:['ideal','Almost entirely in the pedestrian zone.'],run:['ok','Best very early, before the shops open.'],bike:['avoid','Pedestrian zone: you have to push your bike for most of the way.']},
+ facts:[['Best time','Morning, to reach Marienplatz before 11 am'],['Suggested break','Viktualienmarkt, for a snack'],['Accessibility','Flat, almost entirely car-free']],
  path:[[48.13910,11.56580,'Neuhauser Straße'],[48.13895,11.57040,'Augustinerstraße'],[48.13870,11.57170,'Augustinerstraße'],[48.13858,11.57330,'Weinstraße'],[48.13800,11.57440,'Marienplatz'],[48.13740,11.57550,'Rindermarkt'],[48.13650,11.57590,'Viktualienmarkt'],[48.13520,11.57640,'Westenriederstraße'],[48.13600,11.57820,'Tal'],[48.13650,11.57890,'Bräuhausstraße'],[48.13760,11.57970,'Orlandostraße'],[48.13660,11.58020,'Tal'],[48.13510,11.58240,'']],
  stops:[[0,'karlstor'],[1,'michael'],[3,'frauen'],[5,'marien'],[6,'peter'],[7,'vikt'],[10,'hofbrau'],[12,'isartor']],
  spots:['ps_frauen','ps_peter','ps_vikt']},
-{id:'t2',code:'T2',color:'--r2',name:'Eixo Real',sub:'Do palácio ao arco da vitória',lens:'Arquitetura',
- about:'O caminho do poder na Baviera: da ópera e do palácio dos Wittelsbach até a avenida monumental que Ludwig I mandou traçar para o norte. Barroco italiano, jardim renascentista e o neoclássico de Friedrich von Gärtner, um estilo depois do outro.',
- hl:[['Leões da sorte','Toque o focinho na Residenz'],['Amarelo barroco','A Theatinerkirche no fim da tarde'],['Eixo perfeito','Ludwigstraße de ponta a ponta']],
- modes:{walk:['ideal','Calçadas largas e muitos lugares para parar.'],run:['ok','A Ludwigstraße é reta e larga, boa para ritmo constante.'],bike:['ok','Ciclovia na Ludwigstraße; empurre dentro do Hofgarten.']},
- facts:[['Melhor horário','Fim da tarde, com luz quente na Odeonsplatz'],['Pausa sugerida','Café Tambosi, na Odeonsplatz'],['Acessibilidade','Plano; cascalho no Hofgarten']],
+{id:'t2',code:'T2',color:'--r2',name:'Royal Axis',sub:'From the palace to the victory arch',lens:'Architecture',
+ about:'The path of power in Bavaria: from the opera and the Wittelsbach palace to the monumental avenue Ludwig I laid out to the north. Italian Baroque, a Renaissance garden and Friedrich von Gärtner’s Neoclassicism, one style after another.',
+ hl:[['Lucky lions','Rub their snouts at the Residenz'],['Baroque yellow','Theatinerkirche in the late afternoon'],['Perfect axis','Ludwigstraße end to end']],
+ modes:{walk:['ideal','Wide sidewalks and plenty of places to stop.'],run:['ok','Ludwigstraße is straight and wide, good for a steady pace.'],bike:['ok','Bike lane on Ludwigstraße; push inside the Hofgarten.']},
+ facts:[['Best time','Late afternoon, with warm light on Odeonsplatz'],['Suggested break','Café Tambosi, on Odeonsplatz'],['Accessibility','Flat; gravel in the Hofgarten']],
  path:[[48.13970,11.57850,'Residenzstraße'],[48.14090,11.57760,'Residenzstraße'],[48.14190,11.57740,'Odeonsplatz'],[48.14215,11.57690,'Odeonsplatz'],[48.14260,11.57820,'Hofgartenstraße'],[48.14290,11.57900,'Hofgarten'],[48.14310,11.58060,'Hofgarten'],[48.14390,11.57950,'Galeriestraße'],[48.14420,11.57870,'Ludwigstraße'],[48.14750,11.58040,'Ludwigstraße'],[48.15020,11.58140,'Ludwigstraße'],[48.15240,11.58220,'']],
  stops:[[0,'nat'],[1,'resid'],[2,'feld'],[3,'theat'],[6,'hofg'],[9,'bsb'],[10,'ludk'],[11,'sieges']],
  spots:['ps_theat','ps_feld','ps_sieg']},
-{id:'t3',code:'T3',color:'--r3',name:'Atenas no Isar',sub:'Museus e memória no Kunstareal',lens:'Arte e memória',
- about:'Ludwig I sonhou transformar Munique numa nova Atenas, e a Königsplatz é o resultado: templos gregos em pleno bairro universitário. A rota liga essa visão clássica aos museus de arte e à memória mais difícil da cidade, que se concentrou nestas mesmas quadras.',
- hl:[['Fauno Barberini','Na Gliptoteca'],['Der Blaue Reiter','Kandinsky e Marc no Lenbachhaus'],['Cicatrizes à vista','A fachada da Alte Pinakothek']],
- modes:{walk:['ideal','Quadras curtas, museus lado a lado.'],run:['ok','Bom circuito curto pela Königsplatz.'],bike:['ok','Ruas calmas e ciclovias em Maxvorstadt.']},
- facts:[['Melhor horário','Domingo, quando a entrada nos museus estaduais é mais barata'],['Pausa sugerida','A escadaria da Gliptoteca, ao sol'],['Acessibilidade','Plano; museus com acesso por rampa']],
+{id:'t3',code:'T3',color:'--r3',name:'Athens on the Isar',sub:'Museums and memory in the Kunstareal',lens:'Art and memory',
+ about:'Ludwig I dreamed of turning Munich into a new Athens, and Königsplatz is the result: Greek temples in the middle of the university district. The route links that classical vision to the art museums and to the city’s hardest memory, which was concentrated in these same blocks.',
+ hl:[['Barberini Faun','At the Glyptothek'],['Der Blaue Reiter','Kandinsky and Marc at the Lenbachhaus'],['Visible scars','The Alte Pinakothek facade']],
+ modes:{walk:['ideal','Short blocks, museums side by side.'],run:['ok','Good short loop around Königsplatz.'],bike:['ok','Quiet streets and bike lanes in Maxvorstadt.']},
+ facts:[['Best time','Sunday, when state museum admission is cheaper'],['Suggested break','The Glyptothek steps, in the sun'],['Accessibility','Flat; museums with ramp access']],
  path:[[48.14460,11.56870,'Brienner Straße'],[48.14495,11.56760,'Brienner Straße'],[48.14560,11.56600,'Königsplatz'],[48.14620,11.56580,'Königsplatz'],[48.14580,11.56420,'Königsplatz'],[48.14550,11.56360,'Luisenstraße'],[48.14680,11.56380,'Luisenstraße'],[48.14790,11.56400,'Gabelsbergerstraße'],[48.14800,11.56950,'Barer Straße'],[48.14830,11.57000,'Barer Straße'],[48.14745,11.57010,'Gabelsbergerstraße'],[48.14710,11.57210,'']],
  stops:[[0,'karol'],[1,'nsdok'],[3,'glypt'],[5,'propy'],[6,'lenb'],[9,'altep'],[11,'pdm']],
  spots:['ps_konig','ps_altep','ps_pdm']},
-{id:'t4',code:'T4',color:'--r4',name:'Isar e Englischer Garten',sub:'Rio, colinas e a melhor luz da cidade',lens:'Fotografia',
- about:'A rota dos fotógrafos. Acompanha o Isar pela margem leste e termina no meio do Englischer Garten, com pontes, uma piscina Art Nouveau, surfistas no meio da cidade e a vista mais clássica do horizonte de Munique ao pôr do sol.',
- hl:[['Pôr do sol','Maximilianeum e Monopteros'],['Surfe urbano','A onda do Eisbach'],['Horizonte','Torres sobre as árvores']],
- modes:{walk:['ideal','Passeio verde e sem pressa.'],run:['ideal','Margens do Isar e caminhos do parque, quase sem carros.'],bike:['ok','Ciclovias no parque; atenção a pedestres.']},
- facts:[['Melhor horário','Fim da tarde, terminando no pôr do sol'],['Pausa sugerida','Biergarten da Torre Chinesa'],['Acessibilidade','Subida curta e caminhos de terra no parque']],
+{id:'t4',code:'T4',color:'--r4',name:'Isar and Englischer Garten',sub:'River, hills and the best light in town',lens:'Photography',
+ about:'The photographers’ route. It follows the Isar along the east bank and ends in the middle of the Englischer Garten, with bridges, an Art Nouveau pool, surfers in the middle of the city and the most classic view of the Munich skyline at sunset.',
+ hl:[['Sunset','Maximilianeum and Monopteros'],['Urban surfing','The Eisbach wave'],['Skyline','Towers above the trees']],
+ modes:{walk:['ideal','A green, unhurried stroll.'],run:['ideal','Isar banks and park paths, almost car-free.'],bike:['ok','Bike paths in the park; watch for pedestrians.']},
+ facts:[['Best time','Late afternoon, finishing at sunset'],['Suggested break','Chinese Tower beer garden'],['Accessibility','Short climb and dirt paths in the park']],
  path:[[48.12990,11.58340,'Ludwigsbrücke'],[48.13180,11.58360,'Ludwigsbrücke'],[48.13150,11.58620,'Rosenheimer Straße'],[48.13110,11.58660,'Maximiliansanlagen'],[48.13300,11.58860,'Maximiliansanlagen'],[48.13520,11.59150,'Maximiliansanlagen'],[48.13660,11.59440,'Maximiliansanlagen'],[48.13950,11.59580,'Maximiliansanlagen'],[48.14200,11.59700,'Maximiliansanlagen'],[48.14370,11.59750,'Prinzregentenstraße'],[48.14360,11.59350,'Prinzregentenstraße'],[48.14370,11.58800,'Prinzregentenstraße'],[48.14380,11.58640,'Englischer Garten'],[48.14650,11.58640,'Englischer Garten'],[48.14970,11.58800,'Englischer Garten'],[48.15100,11.59050,'Englischer Garten'],[48.15250,11.59200,'']],
  stops:[[0,'dm'],[3,'volks'],[6,'maxim'],[9,'engel'],[11,'eisbach'],[12,'hdk'],[14,'monop'],[16,'chin']],
  spots:['ps_dm','ps_max','ps_engel','ps_eis','ps_mono']},
-{id:'t5',code:'T5',color:'--r5',name:'Grande Volta do Isar',sub:'Pontes, parque e avenidas reais',lens:'Corrida e bike',
- about:'Uma volta longa pensada para correr ou pedalar. Sai do Isartor, cruza o rio, segue pela margem leste até o Anjo da Paz, atravessa o Englischer Garten até o lago e volta ao centro pela Ludwigstraße. Narrações curtas, para ouvir sem parar.',
- hl:[['Ritmo contínuo','Longos trechos sem carros, à beira do rio e no parque'],['Pausa no lago','Kleinhesseloher See'],['Final monumental','Ludwigstraße até a Feldherrnhalle']],
- modes:{walk:['ok','Longa a pé: reserve meio dia.'],run:['ideal','Cerca de 7 km com pouca interrupção.'],bike:['ideal','Volta tranquila, com ciclovias em quase todo o trajeto.']},
- facts:[['Melhor horário','Manhã cedo ou fim da tarde'],['Pausa sugerida','Seehaus, no Kleinhesseloher See'],['Terreno','Asfalto e caminhos de terra batida no parque']],
+{id:'t5',code:'T5',color:'--r5',name:'Great Isar Loop',sub:'Bridges, park and royal avenues',lens:'Run and bike',
+ about:'A long loop designed for running or cycling. It leaves from the Isartor, crosses the river, follows the east bank to the Angel of Peace, crosses the Englischer Garten to the lake and returns to the center along Ludwigstraße. Short narrations, to listen without stopping.',
+ hl:[['Steady pace','Long car-free stretches by the river and in the park'],['Lake break','Kleinhesseloher See'],['Monumental finish','Ludwigstraße to the Feldherrnhalle']],
+ modes:{walk:['ok','Long on foot: set aside half a day.'],run:['ideal','About 7 km with few interruptions.'],bike:['ideal','An easy loop, with bike paths almost all the way.']},
+ facts:[['Best time','Early morning or late afternoon'],['Suggested break','Seehaus, at Kleinhesseloher See'],['Surface','Asphalt and packed-dirt paths in the park']],
  path:[[48.13510,11.58240,'Zweibrückenstraße'],[48.13180,11.58440,'Ludwigsbrücke'],[48.12990,11.58340,'Ludwigsbrücke'],[48.13150,11.58620,'Maximiliansanlagen'],[48.13300,11.58860,'Maximiliansanlagen'],[48.13520,11.59150,'Maximiliansanlagen'],[48.13660,11.59440,'Maximiliansanlagen'],[48.13950,11.59580,'Maximiliansanlagen'],[48.14200,11.59700,'Maximiliansanlagen'],[48.14370,11.59750,'Prinzregentenstraße'],[48.14360,11.59350,'Prinzregentenstraße'],[48.14370,11.58800,'Englischer Garten'],[48.14650,11.58700,'Englischer Garten'],[48.14970,11.58800,'Englischer Garten'],[48.15100,11.59050,'Englischer Garten'],[48.15250,11.59200,'Englischer Garten'],[48.15500,11.59260,'Englischer Garten'],[48.15720,11.59280,'Englischer Garten'],[48.15650,11.58900,'Königinstraße'],[48.15400,11.58560,'Königinstraße'],[48.15300,11.58330,'Leopoldstraße'],[48.15240,11.58220,'Ludwigstraße'],[48.14750,11.58040,'Ludwigstraße'],[48.14420,11.57870,'Ludwigstraße'],[48.14190,11.57740,'']],
  stops:[[0,'isartor'],[2,'dm'],[6,'maxim'],[9,'engel'],[11,'eisbach'],[15,'chin'],[17,'klein'],[21,'sieges'],[24,'feld']],
  spots:['ps_dm','ps_max','ps_engel','ps_eis','ps_mono','ps_sieg','ps_feld']}
@@ -737,7 +737,7 @@ Object.values(SPOTS).forEach(s=>{
   s.tp= s.up?null : s.tgt?P(...s.tgt) : LM[s.lm].p;
   s.dir= s.tp?bearingXY(s.p,s.tp):null;
   const n=parseInt(s.lens,10); s.fov= n<20?96:n<30?74:n<40?54:n<60?40:n<90?28:16;
-  s.name= s.lm?LM[s.lm].name:'Onda do Eisbach';
+  s.name= s.lm?LM[s.lm].name:'Eisbach Wave';
 });
 ROUTES.forEach(R=>{ R.spotObjs=R.spots.map(id=>SPOTS[id]); });
 const byId=id=>ROUTES.find(r=>r.id===id);
@@ -754,21 +754,21 @@ function sunAt(date,elev){ // returns [morningDate, eveningDate] when sun at ele
   const H=Math.acos(Math.max(-1,Math.min(1,cosH)))/r, base=Date.UTC(y,m,d);
   return [new Date(base+(720-4*(MUC[1]+H)-eqt)*6e4), new Date(base+(720-4*(MUC[1]-H)-eqt)*6e4)];
 }
-const tfmt=d=>d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'});
+const tfmt=d=>d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'});
 const today=new Date();
 const SUN={rise:sunAt(today,-0.833)[0],set:sunAt(today,-0.833)[1],g6:sunAt(today,6),blue:sunAt(today,-6)};
 const goldenEve=[SUN.g6[1],SUN.set], goldenMorn=[SUN.rise,SUN.g6[0]], blueEve=[SUN.set,SUN.blue[1]];
 
 /* ================= light phases → brand gradient ================= */
 const PHASES=[
- {k:'brasa',name:'Noite',g:['#121212','#8A2E14','#FF6A3D'],on:'#FFFFFF',radial:true},
- {k:'azulm',name:'Hora azul',g:['#4A6FB5','#1E2B5C','#0F1530'],on:'#FFFFFF'},
- {k:'primeira',name:'Primeira luz',g:['#FDE2B8','#F7B79A','#B9A7D6'],on:'#121212'},
- {k:'dia',name:'Luz do dia',g:['#FFF1C9','#FFD27A','#FFB547'],on:'#121212'},
- {k:'dourada',name:'Hora dourada',g:['#FFD36B','#FFB020','#FF7A3D'],on:'#121212'},
- {k:'por',name:'Pôr do sol',g:['#FF9A3D','#F2545B','#7A3B69'],on:'#FFFFFF'},
- {k:'crep',name:'Crepúsculo',g:['#F2A65A','#9B5DA6','#3B3A7A'],on:'#FFFFFF'},
- {k:'azul',name:'Hora azul',g:['#4A6FB5','#1E2B5C','#0F1530'],on:'#FFFFFF'}
+ {k:'brasa',name:'Night',g:['#121212','#8A2E14','#FF6A3D'],on:'#FFFFFF',radial:true},
+ {k:'azulm',name:'Blue hour',g:['#4A6FB5','#1E2B5C','#0F1530'],on:'#FFFFFF'},
+ {k:'primeira',name:'First light',g:['#FDE2B8','#F7B79A','#B9A7D6'],on:'#121212'},
+ {k:'dia',name:'Daylight',g:['#FFF1C9','#FFD27A','#FFB547'],on:'#121212'},
+ {k:'dourada',name:'Golden hour',g:['#FFD36B','#FFB020','#FF7A3D'],on:'#121212'},
+ {k:'por',name:'Sunset',g:['#FF9A3D','#F2545B','#7A3B69'],on:'#FFFFFF'},
+ {k:'crep',name:'Dusk',g:['#F2A65A','#9B5DA6','#3B3A7A'],on:'#FFFFFF'},
+ {k:'azul',name:'Blue hour',g:['#4A6FB5','#1E2B5C','#0F1530'],on:'#FFFFFF'}
 ];
 function phaseAt(t){
   const T=+t, blueM=+SUN.blue[0], rise=+SUN.rise, g6m=+SUN.g6[0], g6e=+SUN.g6[1], set=+SUN.set, blueE=+SUN.blue[1];
@@ -784,14 +784,14 @@ function applyPhase(){
   rs.setProperty('--g2', P.radial?g[2]:g[1]);
   rs.setProperty('--on-grad', P.on);
   const chip=document.getElementById('lightChip');
-  if(chip) chip.innerHTML=`<span class="lc-sw" aria-hidden="true"></span><span><span class="lc-now">${light.preview!=null?'Prévia':'Agora'} · ${P.name}</span><b>Luz dourada ${tfmt(goldenEve[0])}–${tfmt(goldenEve[1])}</b></span>`;
+  if(chip) chip.innerHTML=`<span class="lc-sw" aria-hidden="true"></span><span><span class="lc-now">${light.preview!=null?'Preview':'Now'} · ${P.name}</span><b>Golden light ${tfmt(goldenEve[0])}–${tfmt(goldenEve[1])}</b></span>`;
 }
 setInterval(()=>{const r=phaseAt(new Date()); if(r!==light.real){light.real=r; if(light.preview==null) applyPhase();}},60000);
 
 /* ================= helpers ================= */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const fmtD=m=>m<950?`${Math.max(0,Math.round(m/10)*10)} m`:`${(m/1000).toFixed(1).replace('.',',')} km`;
+const fmtD=m=>m<950?`${Math.max(0,Math.round(m/10)*10)} m`:`${(m/1000).toFixed(1)} km`;
 const fmtDur=min=>{min=Math.max(5,Math.round(min/5)*5); if(min<60) return `${min} min`; const h=Math.floor(min/60),r=min%60; return r?`${h}h${String(r).padStart(2,'0')}`:`${h}h`;};
 const pace=v=>{const s=1000/v,mm=Math.floor(s/60),ss=Math.round(s%60);return `${mm}:${String(ss).padStart(2,'0')}/km`;};
 const durFor=(R,m)=>R.len/MODES[m].speed/60+R.stops.length*MODES[m].stopMin;
@@ -960,16 +960,16 @@ function cardHtml(R,withMode=true){
   const m=state.mode, suit=withMode?R.modes[m][0]:'ok';
   const dur=durFor(R,m);
   const tags=[`<span class="pill">${esc(R.lens)}</span>`];
-  if(fotoOn()) tags.push(`<span class="pill gold">${ICON.cam}${R.spotObjs.length} fotos</span>`);
+  if(fotoOn()) tags.push(`<span class="pill gold">${ICON.cam}${R.spotObjs.length} photos</span>`);
   if(suit==='ideal'&&m!=='walk') tags.push(`<span class="pill">${ICON[m]}Ideal</span>`);
-  if(suit==='avoid') tags.push(`<span class="pill warn">${ICON[m]}Evite</span>`);
+  if(suit==='avoid') tags.push(`<span class="pill warn">${ICON[m]}Avoid</span>`);
   return `<button class="card${suit==='avoid'?' avoid':''}" data-card="${R.id}" style="--sel:var(${R.color})">
     <span class="thumb">${routeThumb(R)}</span>
     <span class="card-body">
       <span class="card-title"><span class="tcode" style="background:var(${R.color})">${R.code}</span><span>${esc(R.name)}</span></span>
-      <span class="card-meta mono">${fmtD(R.len)} · ${R.stops.length} paradas${withMode?` · ${fmtDur(dur)}`:''}</span>
+      <span class="card-meta mono">${fmtD(R.len)} · ${R.stops.length} stops${withMode?` · ${fmtDur(dur)}`:''}</span>
       <span class="card-tags">${tags.join('')}</span>
-      <span class="card-link">Ver detalhes ${ICON.arrow}</span>
+      <span class="card-link">See details ${ICON.arrow}</span>
     </span></button>`;
 }
 function sortedRoutes(){const o={ideal:0,ok:1,avoid:2};return [...ROUTES].sort((a,b)=>o[a.modes[state.mode][0]]-o[b.modes[state.mode][0]]);}
@@ -979,7 +979,7 @@ function renderExplore(){
   $('#list').innerHTML=rs.map(R=>cardHtml(R,true)).join('');
   document.querySelectorAll('[data-modebox]').forEach(b=>b.innerHTML=modesHtml());
   document.querySelectorAll('[data-lensbox]').forEach(b=>b.innerHTML=lensesHtml());
-  $('#sheetLbl').textContent=`${ROUTES.length} rotas · deslize`;
+  $('#sheetLbl').textContent=`${ROUTES.length} routes · swipe`;
   if(state.sel) document.querySelectorAll('#cards .card').forEach(c=>c.classList.toggle('sel',c.dataset.card===state.sel));
 }
 applyPhase();
@@ -1029,17 +1029,17 @@ document.addEventListener('click',e=>{
 /* ================= spot card ================= */
 let spotT=null;
 function relDir(R,s){
-  if(s.dir==null) return 'Aponte a câmera para cima';
+  if(s.dir==null) return 'Point the camera up';
   const ps=posAt(R,nav.d), from=nav.mode==='gps'&&nav.gps?nav.gps:ps.p;
   const b=s.tp?bearingXY(from,s.tp):s.dir, rel=((b-ps.h)%360+540)%360-180;
-  return Math.abs(rel)<40?'O alvo está à sua frente':Math.abs(rel)>140?'O alvo está atrás de você':rel>0?'O alvo está à sua direita':'O alvo está à sua esquerda';
+  return Math.abs(rel)<40?'The subject is ahead of you':Math.abs(rel)>140?'The subject is behind you':rel>0?'The subject is to your right':'The subject is to your left';
 }
 function showSpot(s,where){
   clearTimeout(spotT); state.spot=s.id;
   const el=$('#spot');
   const dir= where==='top'&&nav? `<div class="s-dir">${ICON.cam}${relDir(nav.R,s)}</div>`:'';
   el.className=where;
-  el.innerHTML=`<div class="s-mark">PONTO DE FOTO · ${esc(s.lens)} · ${esc(s.light.toUpperCase())}</div><div class="s-title">${esc(s.title)}</div><button class="s-x" aria-label="Fechar">${ICON.x}</button><div class="s-tip">${esc(s.tip)}</div>${dir}`;
+  el.innerHTML=`<div class="s-mark">PHOTO SPOT · ${esc(s.lens)} · ${esc(s.light.toUpperCase())}</div><div class="s-title">${esc(s.title)}</div><button class="s-x" aria-label="Close">${ICON.x}</button><div class="s-tip">${esc(s.tip)}</div>${dir}`;
   el.hidden=false;
   el.querySelector('.s-x').onclick=hideSpot;
   if(where==='top') spotT=setTimeout(hideSpot,9000);
@@ -1057,7 +1057,7 @@ function openDetail(id,keep){
   R.stops.forEach((s,i)=>{
     const gap=i<R.stops.length-1?R.stops[i+1].d-s.d:0;
     tl+=`<li><span class="n">${i+1}</span><div><div class="nm">${esc(s.name)}</div>${s.de!==s.name?`<div class="de">${esc(s.de)}</div>`:''}
-      <div class="tags"><span class="pill">${esc(s.style)}</span><span class="pill mono">${esc(s.year)}</span>${fotoOn()&&spotLm.has(s.lm)?`<span class="pill gold">${ICON.cam}foto</span>`:''}</div>
+      <div class="tags"><span class="pill">${esc(s.style)}</span><span class="pill mono">${esc(s.year)}</span>${fotoOn()&&spotLm.has(s.lm)?`<span class="pill gold">${ICON.cam}photo</span>`:''}</div>
       ${gap?`<div class="gap">↓ ${fmtD(gap)} · ${fmtDur(gap/M.speed/60)} ${M.unit}</div>`:''}</div></li>`;
   });
   const frames=R.spotObjs.map((s,i)=>{
@@ -1065,48 +1065,48 @@ function openDetail(id,keep){
     return `<div class="frame"><div class="frame-img">${miniSvg(b,R,{spot:s,noStops:true})}<span class="lensb">${esc(s.lens)}</span></div>
       <div class="frame-body"><div class="frame-mark">▸ ${String(i+1).padStart(2,'0')}A &nbsp;LIGHTWALKER 400</div><div class="frame-title">${esc(s.title)}</div><div class="frame-tip">${esc(s.tip)}</div><div class="frame-light"><i></i>${esc(s.light)}</div></div></div>`;
   }).join('');
-  const durLbl={walk:'com paradas',run:'correndo',bike:'pedalando'}[m];
-  const speedStat= m==='run'?`<b>${pace(M.speed).replace('/km','')}</b><span>ritmo /km</span>`: m==='bike'?`<b>${Math.round(M.speed*3.6)}</b><span>km/h médio</span>`:`<b>${R.stops.length}</b><span>paradas</span>`;
-  const audioLbl= m==='walk'?'Narração completa nas paradas':'Narração curta, sem precisar parar';
+  const durLbl={walk:'with stops',run:'running',bike:'riding'}[m];
+  const speedStat= m==='run'?`<b>${pace(M.speed).replace('/km','')}</b><span>pace /km</span>`: m==='bike'?`<b>${Math.round(M.speed*3.6)}</b><span>avg km/h</span>`:`<b>${R.stops.length}</b><span>stops</span>`;
+  const audioLbl= m==='walk'?'Full narration at each stop':'Short narration, no need to stop';
   $('#detail').innerHTML=`
     <div class="d-scroll">
       <div class="d-hero">${(()=>{const b=R.b,bw=b[2]-b[0],bh=b[3]-b[1];return miniSvg([b[0]-bw*.14,b[1]-bh*.3,b[2]+bw*.14,b[3]+bh*.3],R);})()}</div>
-      <button class="fab d-back" id="dBack" aria-label="Voltar">${ICON.back}</button>
+      <button class="fab d-back" id="dBack" aria-label="Back">${ICON.back}</button>
       <div class="d-body">
         <div class="d-title">
-          <div class="row"><span class="tcode" style="background:var(${R.color})">${R.code}</span><span class="pill">${esc(R.lens)}</span>${fotoOn()?`<span class="pill gold">${ICON.cam}${R.spotObjs.length} pontos de foto</span>`:''}</div>
+          <div class="row"><span class="tcode" style="background:var(${R.color})">${R.code}</span><span class="pill">${esc(R.lens)}</span>${fotoOn()?`<span class="pill gold">${ICON.cam}${R.spotObjs.length} photo spots</span>`:''}</div>
           <h1>${esc(R.name)}</h1>
           <p>${esc(R.sub)}</p>
         </div>
         <div class="mode-block">
-          <div class="modes flat" role="group" aria-label="Modo">${modesHtml()}</div>
-          <div class="suit${suit==='avoid'?' avoid':''}">${ICON[m]}<span><b>${SUIT[suit]} ${m==='walk'?'a pé':m==='run'?'para correr':'de bike'}.</b> ${esc(note)}</span></div>
+          <div class="modes flat" role="group" aria-label="Mode">${modesHtml()}</div>
+          <div class="suit${suit==='avoid'?' avoid':''}">${ICON[m]}<span><b>${SUIT[suit]} ${m==='walk'?'on foot':m==='run'?'for running':'by bike'}.</b> ${esc(note)}</span></div>
         </div>
         <div class="stats">
-          <div class="stat"><b>${fmtD(R.len)}</b><span>distância</span></div>
+          <div class="stat"><b>${fmtD(R.len)}</b><span>distance</span></div>
           <div class="stat"><b>${fmtDur(durFor(R,m))}</b><span>${durLbl}</span></div>
           <div class="stat">${speedStat}</div>
-          <div class="stat"><b>${R.spotObjs.length}</b><span>pontos de foto</span></div>
+          <div class="stat"><b>${R.spotObjs.length}</b><span>photo spots</span></div>
         </div>
-        <div class="d-sec"><h3>Sobre a rota</h3><p>${esc(R.about)}</p></div>
-        <div class="d-sec"><h3>Destaques</h3><div class="hl">${R.hl.map(([a,b])=>`<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join('')}</div></div>
-        <div class="d-sec"><h3>Sua narração</h3><div class="lenses">${lensesHtml()}</div><p class="hint">${audioLbl}. Fotografia mostra os pontos de foto no mapa e avisa quando você estiver perto.</p></div>
-        <div class="d-sec"><h3>Luz de hoje em Munique</h3>
+        <div class="d-sec"><h3>About the route</h3><p>${esc(R.about)}</p></div>
+        <div class="d-sec"><h3>Highlights</h3><div class="hl">${R.hl.map(([a,b])=>`<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join('')}</div></div>
+        <div class="d-sec"><h3>Your narration</h3><div class="lenses">${lensesHtml()}</div><p class="hint">${audioLbl}. Photography shows photo spots on the map and alerts you when you’re close.</p></div>
+        <div class="d-sec"><h3>Today’s light in Munich</h3>
           <div class="sunbox">
             <div class="dayruler" aria-hidden="true"><i style="left:${dayPos(Date.now()).toFixed(1)}%"></i></div>
-            <div><span>Luz dourada manhã</span><b>${tfmt(goldenMorn[0])}–${tfmt(goldenMorn[1])}</b></div>
-            <div><span>Luz dourada tarde</span><b>${tfmt(goldenEve[0])}–${tfmt(goldenEve[1])}</b></div>
-            <div><span>Hora azul</span><b>${tfmt(blueEve[0])}–${tfmt(blueEve[1])}</b></div>
+            <div><span>Morning golden light</span><b>${tfmt(goldenMorn[0])}–${tfmt(goldenMorn[1])}</b></div>
+            <div><span>Evening golden light</span><b>${tfmt(goldenEve[0])}–${tfmt(goldenEve[1])}</b></div>
+            <div><span>Blue hour</span><b>${tfmt(blueEve[0])}–${tfmt(blueEve[1])}</b></div>
           </div>
-          <p class="hint">Para terminar a rota na luz dourada, comece por volta das ${tfmt(new Date(goldenEve[1]-durFor(R,m)*6e4))}.</p>
+          <p class="hint">To finish the route in golden light, start around ${tfmt(new Date(goldenEve[1]-durFor(R,m)*6e4))}.</p>
         </div>
-        ${fotoOn()?`<div class="d-sec"><h3>Pontos de foto</h3><div class="strip"><div class="frames">${frames}</div></div></div>`:''}
-        <div class="d-sec"><h3>Por onde passa</h3><ol class="tl" style="--rc:var(${R.color})">${tl}</ol></div>
-        <div class="d-sec"><h3>Bom saber</h3><dl class="facts">${R.facts.map(([a,b])=>`<div><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join('')}<div><dt>Áudio</dt><dd>Português · ${audioLbl.toLowerCase()}</dd></div></dl></div>
+        ${fotoOn()?`<div class="d-sec"><h3>Photo spots</h3><div class="strip"><div class="frames">${frames}</div></div></div>`:''}
+        <div class="d-sec"><h3>Along the way</h3><ol class="tl" style="--rc:var(${R.color})">${tl}</ol></div>
+        <div class="d-sec"><h3>Good to know</h3><dl class="facts">${R.facts.map(([a,b])=>`<div><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join('')}<div><dt>Audio</dt><dd>English · ${audioLbl.toLowerCase()}</dd></div></dl></div>
       </div>
     </div>
     <div class="cta-bar">
-      <div class="cta-meta"><b>${fmtD(R.len)} · ${fmtDur(durFor(R,m))}</b><span>${MODES[m].label} · áudio em português</span></div>
+      <div class="cta-meta"><b>${fmtD(R.len)} · ${fmtDur(durFor(R,m))}</b><span>${MODES[m].label} · audio in English</span></div>
       <button class="cta" id="dStart">${ICON.play} ${M.cta}</button>
     </div>`;
   $('#detail').hidden=false; state.screen='detail';
@@ -1129,20 +1129,20 @@ function bearing(R,i){return bearingXY(R.pts[i],R.pts[i+1]);}
 function turnAt(R,j){return ((bearing(R,j)-bearing(R,j-1))%360+540)%360-180;}
 function nextStopIdx(){const R=nav.R;for(let i=0;i<R.stops.length;i++) if(!nav.heard.has(i)&&!nav.triggered.has(i)) return i; return -1;}
 function instruction(){
-  const R=nav.R,d=nav.d,k=nextStopIdx(),T=MODES[nav.m].trigger; if(k<0) return {type:'arrive',dist:0,main:'Rota concluída'};
+  const R=nav.R,d=nav.d,k=nextStopIdx(),T=MODES[nav.m].trigger; if(k<0) return {type:'arrive',dist:0,main:'Route complete'};
   const st=R.stops[k], toStop=st.d-d;
-  if(toStop<T+10) return {type:'arrive',dist:toStop,main:`Chegando: ${st.name}`};
+  if(toStop<T+10) return {type:'arrive',dist:toStop,main:`Arriving: ${st.name}`};
   const i=posAt(R,d).i;
   for(let j=i+1;j<R.pts.length-1;j++){
     if(R.cum[j]>=st.d-1) break;
     const t=turnAt(R,j),a=Math.abs(t);
     if(a>=30&&R.cum[j]-d>4){
-      const side=t>0?'direita':'esquerda', street=R.path[j][2];
-      return {type:a>=60?(t>0?'right':'left'):(t>0?'sright':'sleft'),dist:R.cum[j]-d,main:`${a>=60?'Vire':'Mantenha-se'} à ${side}${street?` · ${street}`:''}`};
+      const side=t>0?'right':'left', street=R.path[j][2];
+      return {type:a>=60?(t>0?'right':'left'):(t>0?'sright':'sleft'),dist:R.cum[j]-d,main:`${a>=60?'Turn':'Keep'} ${side}${street?` · ${street}`:''}`};
     }
   }
   const street=R.path[i][2];
-  return {type:'straight',dist:toStop,main:street?`Siga pela ${street}`:'Siga em frente'};
+  return {type:'straight',dist:toStop,main:street?`Continue on ${street}`:'Continue straight'};
 }
 function startNav(id){
   const R=byId(id), m=state.mode;
@@ -1159,19 +1159,19 @@ function startNav(id){
   $('#narr').style.setProperty('--rc',`var(${R.color})`);
   $('#bMode').innerHTML=`${ICON[m]}${MODES[m].label}`;
   styleRoutes(); setAudioBtn(); updateSimBtns();
-  setNotice('Procurando sua localização…');
+  setNotice('Looking for your location…');
   const pp=posAt(R,0);
   goTo({cx:pp.p[0],cy:pp.p[1],s:m==='bike'?1.1:1.5,rot:pp.h,ay:.64});
   if('speechSynthesis' in window){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u);}catch(e){}}
   let gotFix=false;
   const fail=msg=>{if(!gotFix&&nav){nav.mode='sim';setNotice(msg);updateSimBtns();}};
-  const simMsg=`GPS indisponível nesta prévia · ${MODES[m].verb} simulada`;
+  const simMsg=`GPS unavailable in this preview · simulated ${MODES[m].verb}`;
   if(navigator.geolocation){
     try{
       nav.watch=navigator.geolocation.watchPosition(pos=>{
         if(!nav) return; const [x,y]=P(pos.coords.latitude,pos.coords.longitude);
-        if(Math.hypot(x,y)>6000){fail(`Você está fora de Munique · ${MODES[m].verb} simulada`);return;}
-        gotFix=true; nav.mode='gps'; nav.gps=[x,y]; nav.d=Math.max(nav.d,matchD(R,x,y)); setNotice('GPS ativo',true); updateSimBtns();
+        if(Math.hypot(x,y)>6000){fail(`You’re outside Munich · simulated ${MODES[m].verb}`);return;}
+        gotFix=true; nav.mode='gps'; nav.gps=[x,y]; nav.d=Math.max(nav.d,matchD(R,x,y)); setNotice('GPS active',true); updateSimBtns();
       },()=>fail(simMsg),{enableHighAccuracy:true,maximumAge:3000,timeout:8000});
     }catch(e){fail(simMsg);}
   } else fail(simMsg);
@@ -1189,8 +1189,8 @@ function endToExplore(){
 }
 let armT=null;
 $('#endNav').onclick=()=>{const b=$('#endNav');
-  if(b.classList.contains('arm')){clearTimeout(armT);b.classList.remove('arm');b.textContent='Encerrar';endToExplore();}
-  else{b.classList.add('arm');b.textContent='Toque para encerrar';armT=setTimeout(()=>{b.classList.remove('arm');b.textContent='Encerrar';},2600);}
+  if(b.classList.contains('arm')){clearTimeout(armT);b.classList.remove('arm');b.textContent='End';endToExplore();}
+  else{b.classList.add('arm');b.textContent='Tap to end';armT=setTimeout(()=>{b.classList.remove('arm');b.textContent='End';},2600);}
 };
 $('#simPlay').onclick=()=>{nav.paused=!nav.paused;updateSimBtns();};
 $('#simSpeed').onclick=()=>{nav.mult=SPEEDS[(SPEEDS.indexOf(nav.mult)+1)%SPEEDS.length];updateSimBtns();};
@@ -1198,28 +1198,28 @@ $('#recenter').onclick=()=>{nav.follow=true;$('#recenter').hidden=true;};
 function updateSimBtns(){
   if(!nav) return; const sim=nav.mode==='sim';
   $('#simPlay').hidden=!sim; $('#simSpeed').hidden=!sim;
-  const verb={walk:'Andar',run:'Correr',bike:'Pedalar'}[nav.m];
-  $('#simPlay').innerHTML=(nav.paused?ICON.play:ICON.pause)+`<span>${nav.paused?verb:'Pausar'}</span>`;
-  $('#simPlay').setAttribute('aria-label',nav.paused?'Retomar simulação':'Pausar simulação');
+  const verb={walk:'Walk',run:'Run',bike:'Ride'}[nav.m];
+  $('#simPlay').innerHTML=(nav.paused?ICON.play:ICON.pause)+`<span>${nav.paused?verb:'Pause'}</span>`;
+  $('#simPlay').setAttribute('aria-label',nav.paused?'Resume simulation':'Pause simulation');
   $('#simLbl').textContent=nav.mult+'×';
 }
-function setAudioBtn(){$('#audioBtn').innerHTML=audioOn?ICON.aon:ICON.aoff;$('#audioBtn').setAttribute('aria-label',audioOn?'Desligar áudio':'Ligar áudio');}
+function setAudioBtn(){$('#audioBtn').innerHTML=audioOn?ICON.aon:ICON.aoff;$('#audioBtn').setAttribute('aria-label',audioOn?'Turn audio off':'Turn audio on');}
 $('#audioBtn').onclick=()=>{audioOn=!audioOn;setAudioBtn(); if(N.playing){N.tok++;try{speechSynthesis.cancel()}catch(e){};speakCur();}};
 
 function updateNavUI(){
   const R=nav.R, M=MODES[nav.m], ins=instruction();
   const key=ins.type+ins.main;
   if(key!==nav.last){$('#bIcon').innerHTML=TURN[ins.type];$('#bMain').textContent=ins.main;nav.last=key;}
-  $('#bDist').textContent=ins.type==='arrive'?'Agora':fmtD(ins.dist);
+  $('#bDist').textContent=ins.type==='arrive'?'Now':fmtD(ins.dist);
   const k=nextStopIdx();
-  if(k>=0){const st=R.stops[k];$('#bSub').textContent=`Próxima parada · ${k+1}. ${st.name}`;$('#bSubD').textContent=fmtD(st.d-nav.d);}
-  else{$('#bSub').textContent='Todas as paradas ouvidas';$('#bSubD').textContent='';}
+  if(k>=0){const st=R.stops[k];$('#bSub').textContent=`Next stop · ${k+1}. ${st.name}`;$('#bSubD').textContent=fmtD(st.d-nav.d);}
+  else{$('#bSub').textContent='All stops heard';$('#bSubD').textContent='';}
   const rem=R.len-nav.d, min=rem/M.speed/60, eta=new Date(Date.now()+min*60000);
-  const extra= nav.m==='run'?` · ritmo ${pace(M.speed)}`: nav.m==='bike'?` · ${Math.round(M.speed*3.6)} km/h`:'';
+  const extra= nav.m==='run'?` · pace ${pace(M.speed)}`: nav.m==='bike'?` · ${Math.round(M.speed*3.6)} km/h`:'';
   $('#nbRemain').textContent=fmtD(rem);
-  $('#nbEta').textContent=`${Math.max(1,Math.ceil(min))} min ${M.unit}${extra} · chegada ${tfmt(eta)}`;
+  $('#nbEta').textContent=`${Math.max(1,Math.ceil(min))} min ${M.unit}${extra} · arrival ${tfmt(eta)}`;
   $('#nbStops').textContent=`${nav.heard.size}/${R.stops.length}`+(fotoOn()?` · ${nav.spotsSeen.size}/${nav.spots.length}`:'');
-  $('#nbStopsLbl').textContent=fotoOn()?'paradas · fotos':'paradas';
+  $('#nbStopsLbl').textContent=fotoOn()?'stops · photos':'stops';
   $('#progFill').style.width=(nav.d/R.len*100)+'%';
   $('#prog').querySelectorAll('.tick').forEach(t=>t.classList.toggle('on',nav.heard.has(+t.dataset.i)||nav.triggered.has(+t.dataset.i)));
 }
@@ -1227,21 +1227,21 @@ function updateNavUI(){
 /* ================= narration ================= */
 const N={k:-1,idx:0,sent:[],playing:false,timer:null,tok:0};
 let voice=null;
-function pickVoice(){try{const vs=speechSynthesis.getVoices();voice=vs.find(v=>/pt[-_]BR/i.test(v.lang))||vs.find(v=>/^pt/i.test(v.lang))||null;}catch(e){}}
+function pickVoice(){try{const vs=speechSynthesis.getVoices();voice=vs.find(v=>/en[-_]GB/i.test(v.lang))||vs.find(v=>/en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang))||null;}catch(e){}}
 if('speechSynthesis' in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
 function sections(st,last){
   const L=state.lenses, out=[];
   if(nav.m==='walk'){
-    if(L.has('hist')) out.push(['História',st.hist]);
-    if(L.has('arch')) out.push(['Arquitetura',st.arch]);
-    if(L.has('curio')) out.push(['Curiosidade',st.curio]);
+    if(L.has('hist')) out.push(['History',st.hist]);
+    if(L.has('arch')) out.push(['Architecture',st.arch]);
+    if(L.has('curio')) out.push(['Trivia',st.curio]);
     if(!out.length) out.push(['',st.short]);
   } else {
     out.push(['',st.short]);
-    if(L.has('curio')) out.push(['Curiosidade',st.curio]);
-    else if(L.has('arch')) out.push(['Arquitetura',st.arch.split(/(?<=[.!?])\s/)[0]]);
+    if(L.has('curio')) out.push(['Trivia',st.curio]);
+    else if(L.has('arch')) out.push(['Architecture',st.arch.split(/(?<=[.!?])\s/)[0]]);
   }
-  if(last) out.push(['','Você chegou ao fim da rota.']);
+  if(last) out.push(['','You have reached the end of the route.']);
   return out;
 }
 function narrate(k){
@@ -1252,32 +1252,32 @@ function narrate(k){
   secs.forEach(([sec,text],si)=>{(text.match(/[^.!?]+[.!?]+/g)||[text]).forEach((t,i)=>N.sent.push({t:t.trim(),sec,si,first:i===0}));});
   nav.triggered.add(k); nav.hold=!compact;
   $('#narr').classList.toggle('compact',compact);
-  $('#narrKicker').textContent=`Parada ${k+1} de ${R.stops.length} · ${st.style}${compact?' · áudio curto':''}`;
+  $('#narrKicker').textContent=`Stop ${k+1} of ${R.stops.length} · ${st.style}${compact?' · short audio':''}`;
   $('#narrTitle').textContent=st.name;
   $('#narrDe').textContent=st.de!==st.name?`${st.de} · ${st.year}`:st.year;
   let html='',cur=-1;
   N.sent.forEach((s,i)=>{ if(s.si!==cur){ if(cur>=0) html+='</div>'; html+=`<div class="sec">${s.sec?`<em>${s.sec}</em>`:''}`; cur=s.si;} html+=`<span data-i="${i}">${esc(s.t)} </span>`; });
   $('#narrText').innerHTML=html+'</div>';
-  $('#narrClose').textContent=compact?'Fechar':'Continuar rota';
+  $('#narrClose').textContent=compact?'Close':'Continue route';
   $('#narr').hidden=false;
   N.playing=true; syncNarr(); speakCur();
 }
 function syncNarr(){
   $('#narr').classList.toggle('playing',N.playing);
-  $('#narrPlay').innerHTML=(N.playing?ICON.pause+'Pausar':ICON.play+(N.idx>=N.sent.length?'Ouvir de novo':'Continuar'));
+  $('#narrPlay').innerHTML=(N.playing?ICON.pause+'Pause':ICON.play+(N.idx>=N.sent.length?'Play again':'Resume'));
   $('#narrText').querySelectorAll('span[data-i]').forEach((s,i)=>{s.classList.toggle('on',i===N.idx);s.classList.toggle('past',i<N.idx);});
   const on=$('#narrText span.on'); if(on) on.scrollIntoView({block:'nearest',behavior:RM?'auto':'smooth'});
 }
 function speakCur(){
   clearTimeout(N.timer); const tok=++N.tok; const s=N.sent[N.idx]; if(!s){narrFinish();return;}
   syncNarr();
-  const spoken=(s.first&&s.sec&&s.sec!=='História'?s.sec+'. ':'')+s.t;
+  const spoken=(s.first&&s.sec&&s.sec!=='History'?s.sec+'. ':'')+s.t;
   const est=spoken.split(/\s+/).length*390+700;
   const next=()=>{if(tok!==N.tok||!N.playing)return;clearTimeout(N.timer);N.idx++;if(N.idx>=N.sent.length)narrFinish();else speakCur();};
   if(audioOn&&'speechSynthesis' in window){
     try{
       speechSynthesis.cancel();
-      const u=new SpeechSynthesisUtterance(spoken); u.lang='pt-BR'; if(voice)u.voice=voice; u.rate=1.02;
+      const u=new SpeechSynthesisUtterance(spoken); u.lang=voice?voice.lang:'en-GB'; if(voice)u.voice=voice; u.rate=1.02;
       u.onend=next; u.onerror=next;
       N.timer=setTimeout(next,est*2.4+2500);
       speechSynthesis.speak(u);
@@ -1304,12 +1304,12 @@ function showDone(){
   const R=nav.R, heard=nav.heard.size, M=MODES[nav.m];
   $('#done').style.setProperty('--rc',`var(${R.color})`);
   const photos=nav.spots.filter(o=>nav.spotsSeen.has(o.s.id));
-  $('#done').innerHTML=`<div><div style="display:flex;gap:6px;align-items:center"><span class="tcode" style="background:var(${R.color})">${R.code}</span><span class="pill">${ICON[nav.m]}${M.label}</span></div><h2>Rota concluída</h2><p>Você percorreu ${fmtD(R.len)} por ${esc(R.name)} e ouviu ${heard} de ${R.stops.length} narrações.</p></div>
+  $('#done').innerHTML=`<div><div style="display:flex;gap:6px;align-items:center"><span class="tcode" style="background:var(${R.color})">${R.code}</span><span class="pill">${ICON[nav.m]}${M.label}</span></div><h2>Route complete</h2><p>You covered ${fmtD(R.len)} on ${esc(R.name)} and heard ${heard} of ${R.stops.length} narrations.</p></div>
     <div class="done-cols">
-      <div><h4 class="eyebrow">Paradas</h4><ul class="done-stops">${R.stops.map(s=>`<li>${ICON.check}${esc(s.name)}</li>`).join('')}</ul></div>
-      ${fotoOn()?`<div><h4 class="eyebrow">Pontos de foto</h4><ul class="done-stops photo">${(photos.length?photos:nav.spots).map(o=>`<li>${ICON.camS}${esc(o.s.title)}</li>`).join('')}</ul></div>`:''}
+      <div><h4 class="eyebrow">Stops</h4><ul class="done-stops">${R.stops.map(s=>`<li>${ICON.check}${esc(s.name)}</li>`).join('')}</ul></div>
+      ${fotoOn()?`<div><h4 class="eyebrow">Photo spots</h4><ul class="done-stops photo">${(photos.length?photos:nav.spots).map(o=>`<li>${ICON.camS}${esc(o.s.title)}</li>`).join('')}</ul></div>`:''}
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-primary" id="doneBack">Explorar outras rotas</button><button class="btn btn-ghost" id="doneAgain">Refazer</button></div>`;
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-primary" id="doneBack">Explore other routes</button><button class="btn btn-ghost" id="doneAgain">Do it again</button></div>`;
   $('#done').hidden=false;
   const id=R.id;
   $('#doneBack').onclick=endToExplore;

@@ -1,5 +1,5 @@
 // Lightwalker: cache simples para abrir offline depois da primeira visita.
-const CACHE = 'lightwalker-v2';
+const CACHE = 'lightwalker-v3';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
